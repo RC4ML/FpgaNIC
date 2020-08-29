@@ -102,7 +102,8 @@ dma_inf dma_interface (
 	
 	reg [3:0]								wr_state;							
 
-	reg 									start_r,start_rr;
+	reg 									wr_start_r,wr_start_rr;
+	reg 									rd_start_r,rd_start_rr;
 	reg [31:0]								data_cnt;
 	reg [31:0]								offset;
 	reg [31:0]								data_cnt_minus;
@@ -112,8 +113,10 @@ dma_inf dma_interface (
 	assign 	axis_dma_write_cmd[1].valid		= (wr_state == WRITE_CMD); 	
 
 	always @(posedge pcie_clk)begin
-		start_r								<= fpga_control_reg[36][0];
-		start_rr							<= start_r;
+		wr_start_r							<= fpga_control_reg[36][0];
+		wr_start_rr							<= wr_start_r;
+		rd_start_r							<= fpga_control_reg[36][1];
+		rd_start_rr							<= rd_start_r;		
 	end
 
 	always @(posedge pcie_clk)begin
@@ -148,7 +151,7 @@ dma_inf dma_interface (
 		else begin
 			case(wr_state)
 				IDLE:begin
-					if(start_r & ~start_rr)begin
+					if(wr_start_r & ~wr_start_rr)begin
 						wr_state			<= WRITE_CMD;
 					end
 					else begin
@@ -175,32 +178,58 @@ dma_inf dma_interface (
 		end
 	end
 
+//////////////////////////////////////////////////////
 
+	reg 									dma_read_cmd_valid;
 
+	assign	axis_dma_read_cmd[1].address	= {fpga_control_reg[33],fpga_control_reg[32]};
+	assign	axis_dma_read_cmd[1].length		= fpga_control_reg[34]; 
+	assign 	axis_dma_read_cmd[1].valid		= dma_read_cmd_valid; 
 
+	assign  axis_dma_read_data[1].ready		= 1;
 
+	always @(posedge pcie_clk)begin
+		if(~pcie_aresetn)begin
+			dma_read_cmd_valid				<= 1'b0;
+		end
+		else if(rd_start_r & ~rd_start_rr)begin
+			dma_read_cmd_valid				<= 1'b1;
+		end
+		else if(axis_dma_read_cmd[1].valid & axis_dma_read_cmd[1].ready)begin
+			dma_read_cmd_valid				<= 1'b0;
+		end
+		else begin
+			dma_read_cmd_valid				<= dma_read_cmd_valid;
+		end		
+	end
 
-ila_0 inst_ila_0 (
-	.clk(user_clk), // input wire clk
+	ila_0 rx (
+		.clk(pcie_clk), // input wire clk
+	
+	
+		.probe0(axis_dma_read_cmd[1].valid), // input wire [0:0]  probe0  
+		.probe1(axis_dma_read_cmd[1].ready), // input wire [0:0]  probe1 
+		.probe2(axis_dma_read_cmd[1].address), // input wire [63:0]  probe2 
+		.probe3(axis_dma_read_cmd[1].length), // input wire [31:0]  probe3 
+		.probe4(axis_dma_read_data[1].valid), // input wire [0:0]  probe4 
+		.probe5(axis_dma_read_data[1].ready), // input wire [0:0]  probe5 
+		.probe6(axis_dma_read_data[1].last), // input wire [0:0]  probe6 
+		.probe7(axis_dma_read_data[1].data) // input wire [511:0]  probe7
+	);
 
-
-	.probe0(axis_dma_read_cmd.valid), // input wire [0:0]  probe0  
-	.probe1(axis_dma_read_cmd.ready), // input wire [0:0]  probe1 
-	.probe2(axis_dma_write_cmd.valid), // input wire [0:0]  probe2 
-	.probe3(axis_dma_write_cmd.ready), // input wire [0:0]  probe3 
-	.probe4(axis_dma_read_data.data), // input wire [511:0]  probe4 
-	.probe5(read_cnt), // input wire [31:0]  probe5 
-	.probe6(axis_dma_read_data_cnt), // input wire [31:0]  probe6 
-	.probe7(axis_dma_read_data.valid), // input wire [0:0]  probe7 
-	.probe8(axis_dma_write_data.ready), // input wire [0:0]  probe8 
-	.probe9(axis_dma_write_data.data), // input wire [511:0]  probe9 
-	.probe10(write_cnt), // input wire [31:0]  probe10 
-	.probe11(axis_dma_write_data_cnt), // input wire [31:0]  probe11
-	.probe12(error_cnt), // input wire [31:0]  probe12 
-	.probe13(error_index) // input wire [31:0]  probe13
-);
-
-
+	ila_0 tx (
+		.clk(pcie_clk), // input wire clk
+	
+	
+		.probe0(axis_dma_write_cmd[1].valid), // input wire [0:0]  probe0  
+		.probe1(axis_dma_write_cmd[1].ready), // input wire [0:0]  probe1 
+		.probe2(axis_dma_write_cmd[1].address), // input wire [63:0]  probe2 
+		.probe3(axis_dma_write_cmd[1].length), // input wire [31:0]  probe3 
+		.probe4(axis_dma_write_data[1].valid), // input wire [0:0]  probe4 
+		.probe5(axis_dma_write_data[1].ready), // input wire [0:0]  probe5 
+		.probe6(axis_dma_write_data[1].last), // input wire [0:0]  probe6 
+		.probe7(axis_dma_write_data[1].data) // input wire [511:0]  probe7
+	);
 
 
 
