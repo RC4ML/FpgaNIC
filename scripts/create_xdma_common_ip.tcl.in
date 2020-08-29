@@ -1,0 +1,43 @@
+create_ip -name tlb -vendor ethz.systems.fpga -library hls -version 0.09 -module_name tlb_ip
+generate_target {instantiation_template} [get_files $proj_dir/example_module.srcs/sources_1/ip/tlb_ip/tlb_ip.xci]
+update_compile_order -fileset sources_1
+
+create_ip -name mem_write_cmd_page_boundary_check_512 -vendor ethz.systems.fpga -library hls -version 0.3 -module_name mem_write_cmd_page_boundary_check_512_ip
+generate_target {instantiation_template} [get_files $proj_dir/example_module.srcs/sources_1/ip/mem_write_cmd_page_boundary_check_512_ip/mem_write_cmd_page_boundary_check_512_ip.xci]
+update_compile_order -fileset sources_1
+
+create_ip -name mem_write_cmd_page_boundary_check_512 -vendor ethz.systems.fpga -library hls -version 0.3 -module_name mem_read_cmd_page_boundary_check_512_ip
+generate_target {instantiation_template} [get_files $proj_dir/example_module.srcs/sources_1/ip/mem_read_cmd_page_boundary_check_512_ip/mem_read_cmd_page_boundary_check_512_ip.xci]
+update_compile_order -fileset sources_1
+
+
+
+create_ip -name axi_bram_ctrl -vendor xilinx.com -library ip -version 4.1 -module_name axi_bram_ctrl_1
+set_property -dict [list CONFIG.DATA_WIDTH {512} CONFIG.ID_WIDTH {4} CONFIG.SUPPORTS_NARROW_BURST {0} CONFIG.SINGLE_PORT_BRAM {1} CONFIG.ECC_TYPE {0} CONFIG.Component_Name {axi_bram_ctrl_1} CONFIG.BMG_INSTANCE {EXTERNAL} CONFIG.MEM_DEPTH {1024} CONFIG.READ_LATENCY {2}] [get_ips axi_bram_ctrl_1]
+generate_target {instantiation_template} [get_files $proj_dir/example_module.srcs/sources_1/ip/axi_bram_ctrl_1/axi_bram_ctrl_1.xci]
+update_compile_order -fileset sources_1
+
+create_ip -name axi_bram_ctrl -vendor xilinx.com -library ip -version 4.1 -module_name axi_bram_ctrl_0
+set_property -dict [list CONFIG.PROTOCOL {AXI4LITE} CONFIG.SUPPORTS_NARROW_BURST {0} CONFIG.SINGLE_PORT_BRAM {1} CONFIG.ECC_TYPE {0} CONFIG.MEM_DEPTH {1024} CONFIG.READ_LATENCY {2}] [get_ips axi_bram_ctrl_0]
+generate_target {instantiation_template} [get_files $proj_dir/example_module.srcs/sources_1/ip/axi_bram_ctrl_0/axi_bram_ctrl_0.xci]
+update_compile_order -fileset sources_1
+
+create_ip -name axis_data_fifo -vendor xilinx.com -library ip -version 2.0 -module_name axis_data_fifo_512_cc
+set_property -dict [list CONFIG.TDATA_NUM_BYTES {64} CONFIG.IS_ACLK_ASYNC {1} CONFIG.HAS_TKEEP {1} CONFIG.HAS_TLAST {1} CONFIG.Component_Name {axis_data_fifo_512_cc}] [get_ips axis_data_fifo_512_cc]
+generate_target {instantiation_template} [get_files $proj_dir/example_module.srcs/sources_1/ip/axis_data_fifo_512_cc/axis_data_fifo_512_cc.xci]
+update_compile_order -fileset sources_1
+
+create_ip -name axis_clock_converter -vendor xilinx.com -library ip -version 1.1 -module_name axis_clock_converter_32
+set_property -dict [list CONFIG.TDATA_NUM_BYTES {4} CONFIG.Component_Name {axis_clock_converter_32}] [get_ips axis_clock_converter_32]
+generate_target {instantiation_template} [get_files $proj_dir/example_module.srcs/sources_1/ip/axis_clock_converter_32/axis_clock_converter_32.xci]
+update_compile_order -fileset sources_1
+
+create_ip -name axis_clock_converter -vendor xilinx.com -library ip -version 1.1 -module_name axis_clock_converter_96
+set_property -dict [list CONFIG.TDATA_NUM_BYTES {12} CONFIG.Component_Name {axis_clock_converter_96}] [get_ips axis_clock_converter_96]
+generate_target {instantiation_template} [get_files $proj_dir/example_module.srcs/sources_1/ip/axis_clock_converter_96/axis_clock_converter_96.xci]
+update_compile_order -fileset sources_1
+
+create_ip -name axis_clock_converter -vendor xilinx.com -library ip -version 1.1 -module_name axis_clock_converter_136
+set_property -dict [list CONFIG.TDATA_NUM_BYTES {17} CONFIG.Component_Name {axis_clock_converter_136}] [get_ips axis_clock_converter_136]
+generate_target {instantiation_template} [get_files $proj_dir/example_module.srcs/sources_1/ip/axis_clock_converter_136/axis_clock_converter_136.xci]
+update_compile_order -fileset sources_1
