@@ -18,7 +18,7 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-`include"sgd_defines.vh"
+`include"example_module.vh"
 
 module xdma_top_example( 
     output wire[15 : 0] pcie_tx_p,

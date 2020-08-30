@@ -202,58 +202,58 @@ xdma_0 dma_inst (
   .h2c_sts_0(h2c_sts[0]),                                          // output wire [7 : 0] h2c_sts_0
 
 
-  .c2h_dsc_byp_ready_0    (c2h_dsc_byp_ready[1]),
-  .c2h_dsc_byp_src_addr_0 (64'h0),
-  .c2h_dsc_byp_dst_addr_0 (c2h_dsc_byp_addr[1]),
-  .c2h_dsc_byp_len_0      (c2h_dsc_byp_len[1][27:0]),
-  .c2h_dsc_byp_ctl_0      (16'h3), //was 16'h3
-  .c2h_dsc_byp_load_0     (c2h_dsc_byp_load[1]),
+  .c2h_dsc_byp_ready_1    (c2h_dsc_byp_ready[1]),
+  .c2h_dsc_byp_src_addr_1 (64'h0),
+  .c2h_dsc_byp_dst_addr_1 (c2h_dsc_byp_addr[1]),
+  .c2h_dsc_byp_len_1      (c2h_dsc_byp_len[1][27:0]),
+  .c2h_dsc_byp_ctl_1      (16'h3), //was 16'h3
+  .c2h_dsc_byp_load_1     (c2h_dsc_byp_load[1]),
   
-  .h2c_dsc_byp_ready_0    (h2c_dsc_byp_ready[1]),
-  .h2c_dsc_byp_src_addr_0 (h2c_dsc_byp_addr[1]),
-  .h2c_dsc_byp_dst_addr_0 (64'h0),
-  .h2c_dsc_byp_len_0      (h2c_dsc_byp_len[1][27:0]),
-  .h2c_dsc_byp_ctl_0      (16'h3), //was 16'h3
-  .h2c_dsc_byp_load_0     (h2c_dsc_byp_load[1]),
+  .h2c_dsc_byp_ready_1    (h2c_dsc_byp_ready[1]),
+  .h2c_dsc_byp_src_addr_1 (h2c_dsc_byp_addr[1]),
+  .h2c_dsc_byp_dst_addr_1 (64'h0),
+  .h2c_dsc_byp_len_1      (h2c_dsc_byp_len[1][27:0]),
+  .h2c_dsc_byp_ctl_1      (16'h3), //was 16'h3
+  .h2c_dsc_byp_load_1     (h2c_dsc_byp_load[1]),
   
-  .c2h_sts_0(c2h_sts[1]),                                          // output wire [7 : 0] c2h_sts_0
-  .h2c_sts_0(h2c_sts[1]),                                          // output wire [7 : 0] h2c_sts_0
+  .c2h_sts_1(c2h_sts[1]),                                          // output wire [7 : 0] c2h_sts_0
+  .h2c_sts_1(h2c_sts[1]),                                          // output wire [7 : 0] h2c_sts_0
   
   
-  .c2h_dsc_byp_ready_0    (c2h_dsc_byp_ready[2]),
-  .c2h_dsc_byp_src_addr_0 (64'h0),
-  .c2h_dsc_byp_dst_addr_0 (c2h_dsc_byp_addr[2]),
-  .c2h_dsc_byp_len_0      (c2h_dsc_byp_len[2][27:0]),
-  .c2h_dsc_byp_ctl_0      (16'h3), //was 16'h3
-  .c2h_dsc_byp_load_0     (c2h_dsc_byp_load[2]),
+  .c2h_dsc_byp_ready_2    (c2h_dsc_byp_ready[2]),
+  .c2h_dsc_byp_src_addr_2 (64'h0),
+  .c2h_dsc_byp_dst_addr_2 (c2h_dsc_byp_addr[2]),
+  .c2h_dsc_byp_len_2      (c2h_dsc_byp_len[2][27:0]),
+  .c2h_dsc_byp_ctl_2      (16'h3), //was 16'h3
+  .c2h_dsc_byp_load_2     (c2h_dsc_byp_load[2]),
   
-  .h2c_dsc_byp_ready_0    (h2c_dsc_byp_ready[2]),
-  .h2c_dsc_byp_src_addr_0 (h2c_dsc_byp_addr[2]),
-  .h2c_dsc_byp_dst_addr_0 (64'h0),
-  .h2c_dsc_byp_len_0      (h2c_dsc_byp_len[2][27:0]),
-  .h2c_dsc_byp_ctl_0      (16'h3), //was 16'h3
-  .h2c_dsc_byp_load_0     (h2c_dsc_byp_load[2]),
+  .h2c_dsc_byp_ready_2    (h2c_dsc_byp_ready[2]),
+  .h2c_dsc_byp_src_addr_2 (h2c_dsc_byp_addr[2]),
+  .h2c_dsc_byp_dst_addr_2 (64'h0),
+  .h2c_dsc_byp_len_2      (h2c_dsc_byp_len[2][27:0]),
+  .h2c_dsc_byp_ctl_2      (16'h3), //was 16'h3
+  .h2c_dsc_byp_load_2     (h2c_dsc_byp_load[2]),
   
-  .c2h_sts_0(c2h_sts[2]),                                          // output wire [7 : 0] c2h_sts_0
-  .h2c_sts_0(h2c_sts[2]),                                          // output wire [7 : 0] h2c_sts_0
+  .c2h_sts_2(c2h_sts[2]),                                          // output wire [7 : 0] c2h_sts_0
+  .h2c_sts_2(h2c_sts[2]),                                          // output wire [7 : 0] h2c_sts_0
 
 
-  .c2h_dsc_byp_ready_0    (c2h_dsc_byp_ready[3]),
-  .c2h_dsc_byp_src_addr_0 (64'h0),
-  .c2h_dsc_byp_dst_addr_0 (c2h_dsc_byp_addr[3]),
-  .c2h_dsc_byp_len_0      (c2h_dsc_byp_len[3][27:0]),
-  .c2h_dsc_byp_ctl_0      (16'h3), //was 16'h3
-  .c2h_dsc_byp_load_0     (c2h_dsc_byp_load[3]),
+  .c2h_dsc_byp_ready_3    (c2h_dsc_byp_ready[3]),
+  .c2h_dsc_byp_src_addr_3 (64'h0),
+  .c2h_dsc_byp_dst_addr_3 (c2h_dsc_byp_addr[3]),
+  .c2h_dsc_byp_len_3      (c2h_dsc_byp_len[3][27:0]),
+  .c2h_dsc_byp_ctl_3      (16'h3), //was 16'h3
+  .c2h_dsc_byp_load_3     (c2h_dsc_byp_load[3]),
   
-  .h2c_dsc_byp_ready_0    (h2c_dsc_byp_ready[3]),
-  .h2c_dsc_byp_src_addr_0 (h2c_dsc_byp_addr[3]),
-  .h2c_dsc_byp_dst_addr_0 (64'h0),
-  .h2c_dsc_byp_len_0      (h2c_dsc_byp_len[3][27:0]),
-  .h2c_dsc_byp_ctl_0      (16'h3), //was 16'h3
-  .h2c_dsc_byp_load_0     (h2c_dsc_byp_load[3]),
+  .h2c_dsc_byp_ready_3    (h2c_dsc_byp_ready[3]),
+  .h2c_dsc_byp_src_addr_3 (h2c_dsc_byp_addr[3]),
+  .h2c_dsc_byp_dst_addr_3 (64'h0),
+  .h2c_dsc_byp_len_3      (h2c_dsc_byp_len[3][27:0]),
+  .h2c_dsc_byp_ctl_3      (16'h3), //was 16'h3
+  .h2c_dsc_byp_load_3     (h2c_dsc_byp_load[3]),
   
-  .c2h_sts_0(c2h_sts[3]),                                          // output wire [7 : 0] c2h_sts_0
-  .h2c_sts_0(h2c_sts[3]),                                          // output wire [7 : 0] h2c_sts_0
+  .c2h_sts_3(c2h_sts[3]),                                          // output wire [7 : 0] c2h_sts_0
+  .h2c_sts_3(h2c_sts[3])                                          // output wire [7 : 0] h2c_sts_0
 
   
   
