@@ -48,8 +48,8 @@ module dma_driver(
     axi_mm.master       m_axim,
 `endif
     // AXI Stream Interface
-    axi_stream.slave    s_axis_c2h_data[3:0],
-    axi_stream.master   m_axis_h2c_data[3:0],
+    axi_stream.slave    s_axis_c2h_data[0:3],
+    axi_stream.master   m_axis_h2c_data[0:3],
 
     // Descriptor Bypass
     output logic [3:0]       c2h_dsc_byp_ready,

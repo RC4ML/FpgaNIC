@@ -44,12 +44,12 @@ module dma_inf(
     input wire                  user_aresetn,
 
     //DMA Commands
-    axis_mem_cmd.slave          s_axis_dma_read_cmd[3:0],
-    axis_mem_cmd.slave          s_axis_dma_write_cmd[3:0],
+    axis_mem_cmd.slave          s_axis_dma_read_cmd[0:3],
+    axis_mem_cmd.slave          s_axis_dma_write_cmd[0:3],
 
     //DMA Data streams      
-    axi_stream.slave            s_axis_dma_write_data[3:0],
-    axi_stream.master           m_axis_dma_read_data[3:0],
+    axi_stream.slave            s_axis_dma_write_data[0:3],
+    axi_stream.master           m_axis_dma_read_data[0:3],
 
     //Control interface
     //fpga register
@@ -65,6 +65,22 @@ module dma_inf(
 `endif
 
 );
+
+//	ila_0 rxinf (
+//		.clk(pcie_clk), // input wire clk
+	
+	
+//		.probe0(s_axis_dma_read_cmd[1].valid), // input wire [0:0]  probe0  
+//		.probe1(s_axis_dma_read_cmd[1].ready), // input wire [0:0]  probe1 
+//		.probe2(s_axis_dma_read_cmd[1].address), // input wire [63:0]  probe2 
+//		.probe3(s_axis_dma_read_cmd[1].length), // input wire [31:0]  probe3 
+//		.probe4(s_axis_dma_read_cmd[2].valid), // input wire [0:0]  probe4 
+//		.probe5(s_axis_dma_read_cmd[2].ready), // input wire [0:0]  probe5 
+//		.probe6(0), // input wire [0:0]  probe6 
+//		.probe7({0,s_axis_dma_read_cmd[2].address}) // input wire [511:0]  probe7
+//	);
+
+
 
     reg[511:0][31:0]            fpga_status_reg_r;
 
@@ -582,6 +598,22 @@ axis_clock_converter_32 axis_clock_converter_tlb_page_crossing (
    .regPageCrossingCount_V(tlb_page_crossing_count),                // output wire [31 : 0] regPageCrossingCount_V
    .regPageCrossingCount_V_ap_vld(tlb_page_crossing_count_valid)  // output wire regPageCrossingCount_V_ap_vld
  );
+
+ila_1 ilatlb (
+	.clk(user_clk), // input wire clk
+
+
+	.probe0(axis_dma_read_cmd_to_cc_tvalid), // input wire [0:0]  probe0  
+	.probe1(axis_dma_read_cmd_to_cc_tready), // input wire [0:0]  probe1 
+	.probe2(axis_dma_read_cmd_to_cc_tdata), // input wire [95:0]  probe2 
+	.probe3(axis_dma_read_cmd_to_tlb_tvalid), // input wire [0:0]  probe3 
+	.probe4(axis_dma_read_cmd_to_tlb_tready), // input wire [0:0]  probe4 
+	.probe5(axis_dma_read_cmd_to_tlb_tdata), // input wire [95:0]  probe5 
+	.probe6(axis_tlb_interface_valid), // input wire [0:0]  probe6 
+	.probe7(axis_tlb_interface_ready), // input wire [0:0]  probe7 
+	.probe8(axis_tlb_interface_data) // input wire [135:0]  probe8
+);
+
 
 
  /*

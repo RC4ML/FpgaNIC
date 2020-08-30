@@ -187,6 +187,9 @@ dma_inf dma_interface (
 	assign 	axis_dma_read_cmd[1].valid		= dma_read_cmd_valid; 
 
 	assign  axis_dma_read_data[1].ready		= 1;
+	assign  axis_dma_read_data[0].ready		= 1;
+	assign  axis_dma_read_data[2].ready		= 1;
+	assign  axis_dma_read_data[3].ready		= 1;
 
 	always @(posedge pcie_clk)begin
 		if(~pcie_aresetn)begin
