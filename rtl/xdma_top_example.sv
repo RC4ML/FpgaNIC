@@ -104,13 +104,24 @@ dma_inf dma_interface (
 
 	reg 									wr_start_r,wr_start_rr;
 	reg 									rd_start_r,rd_start_rr;
-	reg [31:0]								data_cnt;
+	reg [31:0]								data_cnt,rd_data_cnt;
 	reg [31:0]								offset;
 	reg [31:0]								data_cnt_minus;
 
-	assign	axis_dma_write_cmd[1].address	= {fpga_control_reg[33],fpga_control_reg[32]};
-	assign	axis_dma_write_cmd[1].length	= fpga_control_reg[34]; 
-	assign 	axis_dma_write_cmd[1].valid		= (wr_state == WRITE_CMD); 	
+	reg 									wr_th_en;
+	reg [31:0]								wr_th_sum;
+	reg 									rd_th_en;
+	reg [31:0]								rd_th_sum;
+	reg 									rd_lat_en;
+	reg [31:0]								rd_lat_sum;			
+
+	reg [31:0]		                    	error_cnt;
+	reg [31:0]		                    	error_index;
+	reg 									error_flag,error_flag_r;		
+
+	assign	axis_dma_write_cmd[0].address	= {fpga_control_reg[33],fpga_control_reg[32]};
+	assign	axis_dma_write_cmd[0].length	= fpga_control_reg[34]; 
+	assign 	axis_dma_write_cmd[0].valid		= (wr_state == WRITE_CMD); 	
 
 	always @(posedge pcie_clk)begin
 		wr_start_r							<= fpga_control_reg[36][0];
@@ -128,10 +139,10 @@ dma_inf dma_interface (
 		if(~pcie_aresetn)begin
 			data_cnt 						<= 1'b0;
 		end
-		else if(axis_dma_write_data[1].last)begin
+		else if(axis_dma_write_data[0].last)begin
 			data_cnt						<= 1'b0;
 		end
-		else if(axis_dma_write_data[1].ready & axis_dma_write_data[1].valid)begin
+		else if(axis_dma_write_data[0].ready & axis_dma_write_data[0].valid)begin
 			data_cnt						<= data_cnt + 1'b1;
 		end
 		else begin
@@ -139,10 +150,10 @@ dma_inf dma_interface (
 		end		
 	end
 
-	assign axis_dma_write_data[1].valid		= (wr_state == WRITE_DATA);
-	assign axis_dma_write_data[1].keep		= 64'hffff_ffff_ffff_ffff;
-	assign axis_dma_write_data[1].last		= (data_cnt == data_cnt_minus) && axis_dma_write_data[1].ready && axis_dma_write_data[1].valid;
-	assign axis_dma_write_data[1].data		= data_cnt + offset;
+	assign axis_dma_write_data[0].valid		= (wr_state == WRITE_DATA);
+	assign axis_dma_write_data[0].keep		= 64'hffff_ffff_ffff_ffff;
+	assign axis_dma_write_data[0].last		= (data_cnt == data_cnt_minus) && axis_dma_write_data[0].ready && axis_dma_write_data[0].valid;
+	assign axis_dma_write_data[0].data		= data_cnt + offset;
 
 	always @(posedge pcie_clk)begin
 		if(~pcie_aresetn)begin
@@ -159,7 +170,7 @@ dma_inf dma_interface (
 					end
 				end
 				WRITE_CMD:begin
-					if(axis_dma_write_cmd[1].ready & axis_dma_write_cmd[1].valid)begin
+					if(axis_dma_write_cmd[0].ready & axis_dma_write_cmd[0].valid)begin
 						wr_state			<= WRITE_DATA;
 					end
 					else begin
@@ -167,7 +178,7 @@ dma_inf dma_interface (
 					end
 				end
 				WRITE_DATA:begin
-					if(axis_dma_write_data[1].last)begin
+					if(axis_dma_write_data[0].last)begin
 						wr_state			<= IDLE;
 					end	
 					else begin
@@ -178,13 +189,45 @@ dma_inf dma_interface (
 		end
 	end
 
-//////////////////////////////////////////////////////
+	always@(posedge pcie_clk)begin
+		if(~pcie_aresetn)begin
+			wr_th_en						<= 1'b0;
+		end  
+		else if(axis_dma_write_data[0].last)begin
+			wr_th_en						<= 1'b0;
+		end
+		else if(axis_dma_write_cmd[0].ready & axis_dma_write_cmd[0].valid)begin
+			wr_th_en						<= 1'b1;
+		end		
+		else begin
+			wr_th_en						<= wr_th_en;
+		end
+	end
+
+	
+	always@(posedge pcie_clk)begin
+		if(~pcie_aresetn)begin
+			wr_th_sum						<= 32'b0;
+		end
+		else if(wr_start_r & ~wr_start_rr)begin
+			wr_th_sum						<= 32'b0;
+		end 
+		else if(wr_th_en)begin
+			wr_th_sum						<= wr_th_sum + 1'b1;
+		end
+		else begin
+			wr_th_sum						<= wr_th_sum;
+		end
+	end
+
+	assign fpga_status_reg[54] = wr_th_sum;
+//////////////////////////////////////////////////////read
 
 	reg 									dma_read_cmd_valid;
 
-	assign	axis_dma_read_cmd[1].address	= {fpga_control_reg[33],fpga_control_reg[32]};
-	assign	axis_dma_read_cmd[1].length		= fpga_control_reg[34]; 
-	assign 	axis_dma_read_cmd[1].valid		= dma_read_cmd_valid; 
+	assign	axis_dma_read_cmd[0].address	= {fpga_control_reg[33],fpga_control_reg[32]};
+	assign	axis_dma_read_cmd[0].length		= fpga_control_reg[34]; 
+	assign 	axis_dma_read_cmd[0].valid		= dma_read_cmd_valid; 
 
 	assign  axis_dma_read_data[1].ready		= 1;
 	assign  axis_dma_read_data[0].ready		= 1;
@@ -198,7 +241,7 @@ dma_inf dma_interface (
 		else if(rd_start_r & ~rd_start_rr)begin
 			dma_read_cmd_valid				<= 1'b1;
 		end
-		else if(axis_dma_read_cmd[1].valid & axis_dma_read_cmd[1].ready)begin
+		else if(axis_dma_read_cmd[0].valid & axis_dma_read_cmd[0].ready)begin
 			dma_read_cmd_valid				<= 1'b0;
 		end
 		else begin
@@ -206,32 +249,161 @@ dma_inf dma_interface (
 		end		
 	end
 
+	always @(posedge pcie_clk)begin
+		if(~pcie_aresetn)begin
+			rd_data_cnt 					<= 1'b0;
+		end
+		else if(dma_read_last)begin
+			rd_data_cnt						<= 1'b0;
+		end
+		else if(axis_dma_read_data[0].ready & axis_dma_read_data[0].valid)begin
+			rd_data_cnt						<= rd_data_cnt + 1'b1;
+		end
+		else begin
+			rd_data_cnt						<= rd_data_cnt;
+		end		
+	end
+
+	assign dma_read_last		= (rd_data_cnt == data_cnt_minus) && axis_dma_read_data[0].ready && axis_dma_read_data[0].valid;
+
+
+
+
+	always@(posedge pcie_clk)begin
+		if(~pcie_aresetn)begin
+			rd_th_en						<= 1'b0;
+		end
+		else if(dma_read_last)begin
+			rd_th_en						<= 1'b0;
+		end		
+		else if(axis_dma_read_cmd[0].valid & axis_dma_read_cmd[0].ready)begin
+			rd_th_en						<= 1'b1;
+		end  
+		else begin
+			rd_th_en						<= rd_th_en;
+		end
+	end
+
+	
+	always@(posedge pcie_clk)begin
+		if(~pcie_aresetn)begin
+			rd_th_sum						<= 32'b0;
+		end
+		else if(rd_start_r & ~rd_start_rr)begin
+			rd_th_sum						<= 32'b0;
+		end 
+		else if(rd_th_en)begin
+			rd_th_sum						<= rd_th_sum + 1'b1;
+		end
+		else begin
+			rd_th_sum						<= rd_th_sum;
+		end
+	end
+
+	always@(posedge pcie_clk)begin
+		if(~pcie_aresetn)begin
+			rd_lat_en						<= 1'b0;
+		end
+		else if(axis_dma_read_data[0].valid & axis_dma_read_data[0].ready)begin
+			rd_lat_en						<= 1'b0;
+		end		
+		else if(axis_dma_read_cmd[0].valid & axis_dma_read_cmd[0].ready)begin
+			rd_lat_en						<= 1'b1;
+		end  
+		else begin
+			rd_lat_en						<= rd_lat_en;
+		end
+	end
+
+	
+	always@(posedge pcie_clk)begin
+		if(~pcie_aresetn)begin
+			rd_lat_sum						<= 32'b0;
+		end
+		else if(rd_start_r & ~rd_start_rr)begin
+			rd_lat_sum						<= 32'b0;
+		end 
+		else if(rd_lat_en)begin
+			rd_lat_sum						<= rd_lat_sum + 1'b1;
+		end
+		else begin
+			rd_lat_sum						<= rd_lat_sum;
+		end
+	end
+
+	always @(posedge pcie_clk)begin
+		if(~pcie_aresetn)
+			error_cnt <= 1'b0;
+		else if(((rd_data_cnt + offset) != axis_dma_read_data[0].data[31:0]) && axis_dma_read_data[0].valid && axis_dma_read_data[0].ready)
+			error_cnt <= error_cnt + 1'b1;   
+		else
+			error_cnt <= error_cnt;
+	end
+	
+	always @(posedge pcie_clk)begin
+		if(~pcie_aresetn)
+			error_index <= 1'b0;
+		else if(rd_start_r & ~rd_start_rr)
+			error_index <= 1'b0;
+		else if(error_flag & ~error_flag_r)
+			error_index <= rd_data_cnt;   
+		else
+			error_index <= error_index;
+	end
+
+	always @(posedge pcie_clk)begin
+		if(~pcie_aresetn)
+			error_flag <= 1'b0;
+		else if(rd_start_r & ~rd_start_rr)
+			error_flag <= 1'b0; 			
+		else if(((rd_data_cnt + offset) != axis_dma_read_data[0].data[31:0]) && axis_dma_read_data[0].valid && axis_dma_read_data[0].ready)
+			error_flag <= 1'b1;   
+		else
+			error_flag <= error_flag;
+	end
+
+	always@(posedge pcie_clk)begin
+		error_flag_r 	<= error_flag;
+	end
+	
+
+	assign fpga_status_reg[55] = rd_th_sum;
+	assign fpga_status_reg[56] = rd_lat_sum;
+
+	assign fpga_status_reg[57] = error_cnt;
+	assign fpga_status_reg[58] = error_index;	
+
+
 	ila_0 rx (
 		.clk(pcie_clk), // input wire clk
 	
 	
-		.probe0(axis_dma_read_cmd[1].valid), // input wire [0:0]  probe0  
-		.probe1(axis_dma_read_cmd[1].ready), // input wire [0:0]  probe1 
-		.probe2(axis_dma_read_cmd[1].address), // input wire [63:0]  probe2 
-		.probe3(axis_dma_read_cmd[1].length), // input wire [31:0]  probe3 
-		.probe4(axis_dma_read_data[1].valid), // input wire [0:0]  probe4 
-		.probe5(axis_dma_read_data[1].ready), // input wire [0:0]  probe5 
-		.probe6(axis_dma_read_data[1].last), // input wire [0:0]  probe6 
-		.probe7(axis_dma_read_data[1].data) // input wire [511:0]  probe7
+		.probe0(axis_dma_read_cmd[0].valid), // input wire [0:0]  probe0  
+		.probe1(axis_dma_read_cmd[0].ready), // input wire [0:0]  probe1 
+		.probe2(axis_dma_read_cmd[0].address), // input wire [63:0]  probe2 
+		.probe3(axis_dma_read_cmd[0].length), // input wire [31:0]  probe3 
+		.probe4(axis_dma_read_data[0].valid), // input wire [0:0]  probe4 
+		.probe5(axis_dma_read_data[0].ready), // input wire [0:0]  probe5 
+		.probe6(axis_dma_read_data[0].last), // input wire [0:0]  probe6 
+		.probe7(axis_dma_read_data[0].data), // input wire [511:0]  probe7
+		.probe8(rd_th_sum), // input wire [31:0]  probe8 
+		.probe9(error_cnt) // input wire [31:0]  probe9		
 	);
 
 	ila_0 tx (
 		.clk(pcie_clk), // input wire clk
 	
 	
-		.probe0(axis_dma_write_cmd[1].valid), // input wire [0:0]  probe0  
-		.probe1(axis_dma_write_cmd[1].ready), // input wire [0:0]  probe1 
-		.probe2(axis_dma_write_cmd[1].address), // input wire [63:0]  probe2 
-		.probe3(axis_dma_write_cmd[1].length), // input wire [31:0]  probe3 
-		.probe4(axis_dma_write_data[1].valid), // input wire [0:0]  probe4 
-		.probe5(axis_dma_write_data[1].ready), // input wire [0:0]  probe5 
-		.probe6(axis_dma_write_data[1].last), // input wire [0:0]  probe6 
-		.probe7(axis_dma_write_data[1].data) // input wire [511:0]  probe7
+		.probe0(axis_dma_write_cmd[0].valid), // input wire [0:0]  probe0  
+		.probe1(axis_dma_write_cmd[0].ready), // input wire [0:0]  probe1 
+		.probe2(axis_dma_write_cmd[0].address), // input wire [63:0]  probe2 
+		.probe3(axis_dma_write_cmd[0].length), // input wire [31:0]  probe3 
+		.probe4(axis_dma_write_data[0].valid), // input wire [0:0]  probe4 
+		.probe5(axis_dma_write_data[0].ready), // input wire [0:0]  probe5 
+		.probe6(axis_dma_write_data[0].last), // input wire [0:0]  probe6 
+		.probe7(axis_dma_write_data[0].data), // input wire [511:0]  probe7
+		.probe8(wr_th_sum), // input wire [31:0]  probe8 
+		.probe9(error_cnt) // input wire [31:0]  probe9		
 	);
 
 
