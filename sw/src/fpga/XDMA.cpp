@@ -31,6 +31,7 @@
 #include "../../../driver/xdma_ioctl.h"
 
 #include <fpga/Configuration.h>
+#include <gdrapi.h>
 
 namespace fpga {
 
@@ -108,10 +109,18 @@ void XDMA::initializeMemory() {
    printf("npages: %lu, write TLB\n", map.npages); fflush(stdout);
 
    unsigned long vaddr = (unsigned long) huge_base;
-   for (int i = 0; i < map.npages; i++) { 
-      controller->writeTlb(vaddr, map.dma_addr[i], (i == 0));
-      vaddr += (2*1024*1024);
-   }
+//    for (int i = 0; i < map.npages; i++) { 
+//       //controller->writeTlb(vaddr, map.dma_addr[i], (i == 0));
+// 	  controller->writeTlb(vaddr, 0x000039ffe0560000, (i == 0));
+//       vaddr += (2*1024*1024);
+//    }
+	for (int i = 0; i < int(m_page_table.page_entries/32); i++) { 
+		controller->writeTlb(vaddr, m_page_table.pages[i*32], (i == 0));
+		vaddr += (2*1024*1024);
+		// if(i<30){
+		// 	printf("%lx  %d\n", m_page_table.pages[i],map.npages);
+		// }
+	}
 
    printf("TLB done\n"); fflush(stdout);
    //free(map.dma_addr);

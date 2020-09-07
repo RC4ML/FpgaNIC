@@ -24,7 +24,7 @@ XDMAController::XDMAController(int fd, int byfd)
    //open control device
    m_base = mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
    //open bypass device
-   by_base =  mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, byfd, 0);
+   by_base =  mmap(0, MAP_SIZE_BYPASS, PROT_READ | PROT_WRITE, MAP_SHARED, byfd, 0);
 }
 
 XDMAController::~XDMAController()
@@ -34,7 +34,7 @@ XDMAController::~XDMAController()
       std::cerr << "Error on unmap of control device" << std::endl;
    }
 
-   if (munmap(by_base, MAP_SIZE) == -1)
+   if (munmap(by_base, MAP_SIZE_BYPASS) == -1)
    {
       std::cerr << "Error on unmap of bypass device" << std::endl;
    }
@@ -72,19 +72,28 @@ bool XDMAController::checkBypass(){
 }
 
 
-void XDMAController::writeReg(uint32_t addr, uint32_t value)
-{
+void XDMAController::writeReg(uint32_t addr, uint32_t value){
    volatile uint32_t* wPtr = (uint32_t*) (((uint64_t) m_base) + (uint64_t) ((uint32_t) addr << 2));
    uint32_t writeVal = htols(value);
    *wPtr = writeVal;
 }
-
+uint64_t XDMAController::getRegAddr(uint32_t addr){
+	volatile uint32_t* wPtr = (uint32_t*) (((uint64_t) m_base) + (uint64_t) ((uint32_t) addr << 2));
+	
+	return (uint64_t)wPtr;
+}
+uint64_t XDMAController::getBypassAddr(uint32_t addr){
+	volatile __m512i* wPtr =  (__m512i*) (((uint64_t) by_base) + (uint64_t) ((uint32_t) addr << 6));
+	cout<<(uint64_t)wPtr<<endl;
+	return (uint64_t)wPtr;
+}
 
 void XDMAController::writeBypassReg(uint32_t addr, uint64_t* value)
 {
    if(checkBypass() == 1){
       volatile __m512i* wPtr = (__m512i*) (((uint64_t) by_base) + (uint64_t) ((uint32_t) addr << 6));
       // *wPtr = _mm512_set_epi32 (value[15], value[14], value[13], value[12], value[11], value[10], value[9], value[8], value[7],value[6],value[5],value[4],value[3],value[2],value[1],value[0]);
+	  cout<<(uint64_t)wPtr<<endl;
       *wPtr = _mm512_set_epi64 (value[7],value[6],value[5],value[4],value[3],value[2],value[1],value[0]);
    }else{
       cout<<"bypass disabled, write failed!\n";

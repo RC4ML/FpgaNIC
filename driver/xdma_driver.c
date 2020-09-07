@@ -1196,7 +1196,7 @@ probe_engines(struct dev_inst *inst) {
     /* Clear all pending events. */
     //iowrite32(reg_value, &inst->regs->status);
 
-    mmiowb();
+    // mmiowb();
 
     /* Enable interrupts. */
     //iowrite32(reg_value, &inst->regs->interrupt_enable_mask);

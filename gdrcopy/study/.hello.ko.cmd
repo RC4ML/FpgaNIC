@@ -1,0 +1,1 @@
+cmd_/home/cj/gdrcopy/study/hello.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000  --build-id  -T ./scripts/module-common.lds -o /home/cj/gdrcopy/study/hello.ko /home/cj/gdrcopy/study/hello.o /home/cj/gdrcopy/study/hello.mod.o;  true

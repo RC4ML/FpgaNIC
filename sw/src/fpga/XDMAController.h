@@ -44,8 +44,8 @@
 #include <immintrin.h>                   // include used to acces the intrinsics instructions
 
 
+#define MAP_SIZE_BYPASS (1024*1024UL)
 #define MAP_SIZE (4*1024UL)
-
 /* ltoh: little to host */
 /* htol: little to host */
 #if __BYTE_ORDER == __LITTLE_ENDIAN
@@ -71,6 +71,8 @@ class XDMAController
       ~XDMAController();
       void writeTlb(unsigned long vaddr, unsigned long paddr, bool isBase);
       void writeReg(uint32_t addr, uint32_t value);
+	  uint64_t getRegAddr(uint32_t addr);
+	  uint64_t getBypassAddr(uint32_t addr);
       void writeBypassReg(uint32_t addr, uint64_t* value);
 
       uint32_t readReg(uint32_t addr);

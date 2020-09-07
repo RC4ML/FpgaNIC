@@ -1,0 +1,15 @@
+GDRAPI_ARCH=X86
+cd src/gdrdrv && \
+make 
+make[1]: Entering directory '/home/cj/gdrcopy/src/gdrdrv'
+echo "picking"
+picking
+Picking NVIDIA driver sources from NVIDIA_SRC_DIR=/usr/src/nvidia-450.51.05/nvidia. If that does not meet your expectation, you might have a stale driver still around and that might cause problems.
+make[2]: Entering directory '/usr/src/linux-headers-5.4.0-42-generic'
+  CC [M]  /home/cj/gdrcopy/src/gdrdrv/nv-p2p-dummy.o
+scripts/Makefile.build:273: recipe for target '/home/cj/gdrcopy/src/gdrdrv/nv-p2p-dummy.o' failed
+Makefile:1731: recipe for target '/home/cj/gdrcopy/src/gdrdrv' failed
+make[2]: Leaving directory '/usr/src/linux-headers-5.4.0-42-generic'
+Makefile:49: recipe for target 'module' failed
+make[1]: Leaving directory '/home/cj/gdrcopy/src/gdrdrv'
+Makefile:27: recipe for target 'driver' failed

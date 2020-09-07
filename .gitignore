@@ -1,3 +1,7 @@
 build/
 iprepo/
 */build/
+
+*.so
+*.o
+/.vscode
