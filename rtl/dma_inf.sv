@@ -186,7 +186,7 @@ module dma_inf(
 
     wire                    bypass_en_a;          // output wire bram_en_a
     wire [ 63:0]            bypass_we_a;          // output wire [63 : 0] bram_we_a
-    wire [ 15:0]            bypass_addr_a;      // output wire [15 : 0] bram_addr_a
+    wire [ 19:0]            bypass_addr_a;      // output wire [15 : 0] bram_addr_a
     wire [511:0]            bypass_wrdata_a;  // output wire [511 : 0] bram_wrdata_a
     wire [511:0]            bypass_rddata_a;  // input wire [511 : 0] bram_rddata_a     
 
@@ -197,7 +197,7 @@ module dma_inf(
         .s_axi_aclk         (pcie_clk),
         .s_axi_aresetn      (pcie_aresetn),
         .s_axi_awid         (axim_control.awid ),
-        .s_axi_awaddr       (axim_control.awaddr[15:0]),
+        .s_axi_awaddr       (axim_control.awaddr[19:0]),
         .s_axi_awlen        (axim_control.awlen),
         .s_axi_awsize       (axim_control.awsize),
         .s_axi_awburst      (axim_control.awburst),
@@ -216,7 +216,7 @@ module dma_inf(
         .s_axi_bvalid       (axim_control.bvalid),
         .s_axi_bready       (axim_control.bready),
         .s_axi_arid         (axim_control.arid),
-        .s_axi_araddr       (axim_control.araddr[15:0]),
+        .s_axi_araddr       (axim_control.araddr[19:0]),
         .s_axi_arlen        (axim_control.arlen),
         .s_axi_arsize       (axim_control.arsize),
         .s_axi_arburst      (axim_control.arburst),
@@ -256,7 +256,111 @@ module dma_inf(
             .bypass_status_reg  (bypass_status_reg)
         
         );
+///////////////////////////degug//////////////////////////
+        reg 									wr_th_en,rd_lat_en;
+        reg [31:0]								wr_th_sum,rd_lat_sum;
+        reg [31:0]								data_cnt;
 
+        always @(posedge pcie_clk)begin
+            if(~pcie_aresetn)begin
+                data_cnt 						<= 1'b0;
+            end
+            else if(data_cnt == 32'h4000)begin
+                data_cnt						<= 1'b0;
+            end
+            else if(axim_control.wready & axim_control.wvalid)begin
+                data_cnt						<= data_cnt + 1'b1;
+            end
+            else begin
+                data_cnt						<= data_cnt;
+            end		
+        end        
+
+        always@(posedge pcie_clk)begin
+            if(~pcie_aresetn)begin
+                wr_th_en						<= 1'b0;
+            end  
+            else if(data_cnt == 32'h4000)begin
+                wr_th_en						<= 1'b0;
+            end
+            else if(axim_control.awready & axim_control.awvalid)begin
+                wr_th_en						<= 1'b1;
+            end		
+            else begin
+                wr_th_en						<= wr_th_en;
+            end
+        end
+    
+        
+        always@(posedge pcie_clk)begin
+            if(~pcie_aresetn)begin
+                wr_th_sum						<= 32'b0;
+            end
+            else if(data_cnt == 32'h4000)begin
+                wr_th_sum						<= 32'b0;
+            end 
+            else if(wr_th_en)begin
+                wr_th_sum						<= wr_th_sum + 1'b1;
+            end
+            else begin
+                wr_th_sum						<= wr_th_sum;
+            end
+        end
+
+	always@(posedge pcie_clk)begin
+		if(~pcie_aresetn)begin
+			rd_lat_en						<= 1'b0;
+		end	
+		else if(axim_control.arready & axim_control.arvalid)begin
+			rd_lat_en						<= ~rd_lat_en;
+		end  
+		else begin
+			rd_lat_en						<= rd_lat_en;
+		end
+	end
+
+	
+	always@(posedge pcie_clk)begin
+		if(~pcie_aresetn)begin
+			rd_lat_sum						<= 32'b0;
+		end
+		else if(axim_control.arready & axim_control.arvalid)begin
+			rd_lat_sum						<= 32'b0;
+		end 
+		else if(rd_lat_en)begin
+			rd_lat_sum						<= rd_lat_sum + 1'b1;
+		end
+		else begin
+			rd_lat_sum						<= rd_lat_sum;
+		end
+	end
+
+
+
+        ila_3 bypass_ila (
+            .clk(pcie_clk), // input wire clk
+        
+        
+            .probe0(axim_control.awvalid), // input wire [0:0]  probe0  
+            .probe1(axim_control.awready), // input wire [0:0]  probe1 
+            .probe2(axim_control.awaddr[19:0]), // input wire [19:0]  probe2 
+            .probe3(axim_control.awlen), // input wire [7:0]  probe3 
+            .probe4(axim_control.wvalid), // input wire [0:0]  probe4 
+            .probe5(axim_control.wready), // input wire [0:0]  probe5 
+            .probe6(axim_control.wdata), // input wire [511:0]  probe6 
+            .probe7(axim_control.arvalid), // input wire [0:0]  probe7 
+            .probe8(axim_control.arready), // input wire [0:0]  probe8 
+            .probe9(axim_control.araddr[19:0]), // input wire [19:0]  probe9 
+            .probe10(axim_control.arlen), // input wire [7:0]  probe10 
+            .probe11(axim_control.rvalid), // input wire [0:0]  probe11 
+            .probe12(axim_control.rready), // input wire [0:0]  probe12 
+            .probe13(axim_control.rdata), // input wire [511:0]  probe13 
+            .probe14(bypass_en_a), // input wire [0:0]  probe14 
+            .probe15(bypass_we_a[0]), // input wire [0:0]  probe15 
+            .probe16(data_cnt[19:0]), // input wire [19:0]  probe16 
+            .probe17(wr_th_sum), // input wire [31:0]  probe17 
+            .probe18(rd_lat_sum) // input wire [31:0]  probe18
+        );
 
 `endif
 ///////////axil

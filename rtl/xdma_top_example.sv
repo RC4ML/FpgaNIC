@@ -43,11 +43,40 @@ axi_stream      axis_dma_write_data[4]();
 
 
 
+
 wire[511:0][31:0]     fpga_control_reg;
 wire[511:0][31:0]     fpga_status_reg; 
 
 wire[31:0][511:0]     bypass_control_reg;
 wire[31:0][511:0]     bypass_status_reg;
+
+
+//reset
+
+reg 					reset,reset_r;
+reg[7:0]				reset_cnt;
+reg 					user_rstn;		
+
+always @(posedge pcie_clk)begin
+	reset				<= fpga_control_reg[0][0];
+	reset_r				<= reset;
+end
+
+always @(posedge pcie_clk)begin
+	if(reset & ~reset_r)begin
+		reset_cnt		<= 1'b0;
+	end
+	else if(reset_cnt[7] == 1'b1)begin
+		reset_cnt		<= reset_cnt;
+	end
+	else begin
+		reset_cnt		<= reset_cnt + 1'b1;
+	end
+end
+
+assign user_rstn = pcie_aresetn & reset_cnt[7];
+
+
 
 /*
  * DMA Interface
@@ -71,7 +100,7 @@ dma_inf dma_interface (
 	 
 	//user clock input
     .user_clk						(pcie_clk),
-    .user_aresetn					(pcie_aresetn),
+    .user_aresetn					(user_rstn),
 
     //DMA Commands 
     .s_axis_dma_read_cmd            (axis_dma_read_cmd),
@@ -94,22 +123,76 @@ dma_inf dma_interface (
 
 );
 
+genvar i;
+generate
+	for(i = 0; i < 4; i = i + 1) begin
+
+dma_data_transfer#(
+    .PAGE_SIZE (2*1024*1024)	,
+    .PAGE_NUM  (109)		,
+    .CTRL_NUM  (1024)		 
+)dma_data_transfer_inst( 
+
+    //user clock input
+    .clk							(pcie_clk),
+    .rstn							(user_rstn),
+
+    //DMA Commands
+    .axis_dma_read_cmd				(axis_dma_read_cmd[i]),
+    .axis_dma_write_cmd				(axis_dma_write_cmd[i]),
+
+    //DMA Data streams      
+    .axis_dma_write_data			(axis_dma_write_data[i]),
+    .axis_dma_read_data				(axis_dma_read_data[i]),
+
+    //control reg
+    .transfer_base_addr				({fpga_control_reg[41+i*8],fpga_control_reg[40+i*8]}),
+
+    .transfer_start_page			(fpga_control_reg[42+i*8]),                      
+    .transfer_length				(fpga_control_reg[43+i*8]),
+    .transfer_offset				(fpga_control_reg[44+i*8]),
+    .work_page_size					(fpga_control_reg[45+i*8]),
+    .transfer_start					(fpga_control_reg[46][i]),
+	.gpu_read_count					(fpga_control_reg[47+i*8]),
+	.gpu_write_count				(fpga_status_reg[60+i])
+
+    );
+
+	end
+endgenerate
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ///////////////////////dma_ex debug//////////
 
-	localparam [3:0]		IDLE 			= 4'b0001,
-							WRITE_CMD		= 4'b0010,
-							WRITE_DATA		= 4'b0100;
+// 	localparam [3:0]		IDLE 			= 4'b0001,
+// 							WRITE_CMD		= 4'b0010,
+// 							WRITE_DATA		= 4'b0100;
 	
-	reg [3:0]								wr_state;							
+// 	reg [3:0]								wr_state;							
 
-	reg 									wr_start_r,wr_start_rr;
+// 	reg 									wr_start_r,wr_start_rr;
 	reg 									rd_start_r,rd_start_rr;
-	reg [31:0]								data_cnt,rd_data_cnt;
-	reg [31:0]								offset;
-	reg [31:0]								data_cnt_minus;
+// 	reg [31:0]								data_cnt,rd_data_cnt;
+// 	reg [31:0]								offset;
+// 	reg [31:0]								data_cnt_minus;
 
-	reg 									wr_th_en;
-	reg [31:0]								wr_th_sum;
+// 	reg 									wr_th_en;
+// 	reg [31:0]								wr_th_sum;
 	reg 									rd_th_en;
 	reg [31:0]								rd_th_sum;
 	reg 									rd_lat_en;
@@ -119,13 +202,13 @@ dma_inf dma_interface (
 	reg [31:0]		                    	error_index;
 	reg 									error_flag,error_flag_r;		
 
-	assign	axis_dma_write_cmd[0].address	= {fpga_control_reg[33],fpga_control_reg[32]};
-	assign	axis_dma_write_cmd[0].length	= fpga_control_reg[34]; 
-	assign 	axis_dma_write_cmd[0].valid		= (wr_state == WRITE_CMD); 	
+// 	assign	axis_dma_write_cmd[0].address	= {fpga_control_reg[33],fpga_control_reg[32]};
+// 	assign	axis_dma_write_cmd[0].length	= fpga_control_reg[34]; 
+// 	assign 	axis_dma_write_cmd[0].valid		= (wr_state == WRITE_CMD); 	
 
 	always @(posedge pcie_clk)begin
-		wr_start_r							<= fpga_control_reg[36][0];
-		wr_start_rr							<= wr_start_r;
+		// wr_start_r							<= fpga_control_reg[36][0];
+		// wr_start_rr							<= wr_start_r;
 		rd_start_r							<= fpga_control_reg[36][1];
 		rd_start_rr							<= rd_start_r;		
 	end
@@ -135,93 +218,93 @@ dma_inf dma_interface (
 		offset								<= fpga_control_reg[35];
 	end
 
-	always @(posedge pcie_clk)begin
-		if(~pcie_aresetn)begin
-			data_cnt 						<= 1'b0;
-		end
-		else if(axis_dma_write_data[0].last)begin
-			data_cnt						<= 1'b0;
-		end
-		else if(axis_dma_write_data[0].ready & axis_dma_write_data[0].valid)begin
-			data_cnt						<= data_cnt + 1'b1;
-		end
-		else begin
-			data_cnt						<= data_cnt;
-		end		
-	end
+// 	always @(posedge pcie_clk)begin
+// 		if(~pcie_aresetn)begin
+// 			data_cnt 						<= 1'b0;
+// 		end
+// 		else if(axis_dma_write_data[0].last)begin
+// 			data_cnt						<= 1'b0;
+// 		end
+// 		else if(axis_dma_write_data[0].ready & axis_dma_write_data[0].valid)begin
+// 			data_cnt						<= data_cnt + 1'b1;
+// 		end
+// 		else begin
+// 			data_cnt						<= data_cnt;
+// 		end		
+// 	end
 
-	assign axis_dma_write_data[0].valid		= (wr_state == WRITE_DATA);
-	assign axis_dma_write_data[0].keep		= 64'hffff_ffff_ffff_ffff;
-	assign axis_dma_write_data[0].last		= (data_cnt == data_cnt_minus) && axis_dma_write_data[0].ready && axis_dma_write_data[0].valid;
-	assign axis_dma_write_data[0].data		= data_cnt + offset;
+// 	assign axis_dma_write_data[0].valid		= (wr_state == WRITE_DATA);
+// 	assign axis_dma_write_data[0].keep		= 64'hffff_ffff_ffff_ffff;
+// 	assign axis_dma_write_data[0].last		= (data_cnt == data_cnt_minus) && axis_dma_write_data[0].ready && axis_dma_write_data[0].valid;
+// 	assign axis_dma_write_data[0].data		= data_cnt + offset;
 
-	always @(posedge pcie_clk)begin
-		if(~pcie_aresetn)begin
-			wr_state						<= IDLE;
-		end
-		else begin
-			case(wr_state)
-				IDLE:begin
-					if(wr_start_r & ~wr_start_rr)begin
-						wr_state			<= WRITE_CMD;
-					end
-					else begin
-						wr_state			<= IDLE;
-					end
-				end
-				WRITE_CMD:begin
-					if(axis_dma_write_cmd[0].ready & axis_dma_write_cmd[0].valid)begin
-						wr_state			<= WRITE_DATA;
-					end
-					else begin
-						wr_state			<= WRITE_CMD;
-					end
-				end
-				WRITE_DATA:begin
-					if(axis_dma_write_data[0].last)begin
-						wr_state			<= IDLE;
-					end	
-					else begin
-						wr_state			<= WRITE_DATA;
-					end
-				end
-			endcase
-		end
-	end
+// 	always @(posedge pcie_clk)begin
+// 		if(~pcie_aresetn)begin
+// 			wr_state						<= IDLE;
+// 		end
+// 		else begin
+// 			case(wr_state)
+// 				IDLE:begin
+// 					if(wr_start_r & ~wr_start_rr)begin
+// 						wr_state			<= WRITE_CMD;
+// 					end
+// 					else begin
+// 						wr_state			<= IDLE;
+// 					end
+// 				end
+// 				WRITE_CMD:begin
+// 					if(axis_dma_write_cmd[0].ready & axis_dma_write_cmd[0].valid)begin
+// 						wr_state			<= WRITE_DATA;
+// 					end
+// 					else begin
+// 						wr_state			<= WRITE_CMD;
+// 					end
+// 				end
+// 				WRITE_DATA:begin
+// 					if(axis_dma_write_data[0].last)begin
+// 						wr_state			<= IDLE;
+// 					end	
+// 					else begin
+// 						wr_state			<= WRITE_DATA;
+// 					end
+// 				end
+// 			endcase
+// 		end
+// 	end
 
-	always@(posedge pcie_clk)begin
-		if(~pcie_aresetn)begin
-			wr_th_en						<= 1'b0;
-		end  
-		else if(axis_dma_write_data[0].last)begin
-			wr_th_en						<= 1'b0;
-		end
-		else if(axis_dma_write_cmd[0].ready & axis_dma_write_cmd[0].valid)begin
-			wr_th_en						<= 1'b1;
-		end		
-		else begin
-			wr_th_en						<= wr_th_en;
-		end
-	end
+// 	always@(posedge pcie_clk)begin
+// 		if(~pcie_aresetn)begin
+// 			wr_th_en						<= 1'b0;
+// 		end  
+// 		else if(axis_dma_write_data[0].last)begin
+// 			wr_th_en						<= 1'b0;
+// 		end
+// 		else if(axis_dma_write_cmd[0].ready & axis_dma_write_cmd[0].valid)begin
+// 			wr_th_en						<= 1'b1;
+// 		end		
+// 		else begin
+// 			wr_th_en						<= wr_th_en;
+// 		end
+// 	end
 
 	
-	always@(posedge pcie_clk)begin
-		if(~pcie_aresetn)begin
-			wr_th_sum						<= 32'b0;
-		end
-		else if(wr_start_r & ~wr_start_rr)begin
-			wr_th_sum						<= 32'b0;
-		end 
-		else if(wr_th_en)begin
-			wr_th_sum						<= wr_th_sum + 1'b1;
-		end
-		else begin
-			wr_th_sum						<= wr_th_sum;
-		end
-	end
+// 	always@(posedge pcie_clk)begin
+// 		if(~pcie_aresetn)begin
+// 			wr_th_sum						<= 32'b0;
+// 		end
+// 		else if(wr_start_r & ~wr_start_rr)begin
+// 			wr_th_sum						<= 32'b0;
+// 		end 
+// 		else if(wr_th_en)begin
+// 			wr_th_sum						<= wr_th_sum + 1'b1;
+// 		end
+// 		else begin
+// 			wr_th_sum						<= wr_th_sum;
+// 		end
+// 	end
 
-	assign fpga_status_reg[54] = wr_th_sum;
-//////////////////////////////////////////////////////read
+// 	assign fpga_status_reg[54] = wr_th_sum;
+// //////////////////////////////////////////////////////read
 
 	reg 									dma_read_cmd_valid;
 
@@ -387,24 +470,24 @@ dma_inf dma_interface (
 		.probe6(axis_dma_read_data[0].last), // input wire [0:0]  probe6 
 		.probe7(axis_dma_read_data[0].data), // input wire [511:0]  probe7
 		.probe8(rd_th_sum), // input wire [31:0]  probe8 
-		.probe9(error_cnt) // input wire [31:0]  probe9		
+		.probe9(rd_lat_sum) // input wire [31:0]  probe9		
 	);
 
-	ila_0 tx (
-		.clk(pcie_clk), // input wire clk
+//	ila_0 tx (
+//		.clk(pcie_clk), // input wire clk
 	
 	
-		.probe0(axis_dma_write_cmd[0].valid), // input wire [0:0]  probe0  
-		.probe1(axis_dma_write_cmd[0].ready), // input wire [0:0]  probe1 
-		.probe2(axis_dma_write_cmd[0].address), // input wire [63:0]  probe2 
-		.probe3(axis_dma_write_cmd[0].length), // input wire [31:0]  probe3 
-		.probe4(axis_dma_write_data[0].valid), // input wire [0:0]  probe4 
-		.probe5(axis_dma_write_data[0].ready), // input wire [0:0]  probe5 
-		.probe6(axis_dma_write_data[0].last), // input wire [0:0]  probe6 
-		.probe7(axis_dma_write_data[0].data), // input wire [511:0]  probe7
-		.probe8(wr_th_sum), // input wire [31:0]  probe8 
-		.probe9(error_cnt) // input wire [31:0]  probe9		
-	);
+//		.probe0(axis_dma_write_cmd[0].valid), // input wire [0:0]  probe0  
+//		.probe1(axis_dma_write_cmd[0].ready), // input wire [0:0]  probe1 
+//		.probe2(axis_dma_write_cmd[0].address), // input wire [63:0]  probe2 
+//		.probe3(axis_dma_write_cmd[0].length), // input wire [31:0]  probe3 
+//		.probe4(axis_dma_write_data[0].valid), // input wire [0:0]  probe4 
+//		.probe5(axis_dma_write_data[0].ready), // input wire [0:0]  probe5 
+//		.probe6(axis_dma_write_data[0].last), // input wire [0:0]  probe6 
+//		.probe7(axis_dma_write_data[0].data), // input wire [511:0]  probe7
+//		.probe8(wr_th_sum), // input wire [31:0]  probe8 
+//		.probe9(error_cnt) // input wire [31:0]  probe9		
+//	);
 
 
 

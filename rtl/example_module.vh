@@ -411,6 +411,6 @@ endtask
 endinterface
 
 `define FPGA_VERSION 20200610
-
+`define XDMA_BYPASS
 
 `endif
