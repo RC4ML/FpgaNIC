@@ -31,7 +31,7 @@ module dma_data_transfer#(
     input wire                  rstn,
 
     //DMA Commands
-    axis_mem_cmd.master         axis_dma_read_cmd,
+//    axis_mem_cmd.master         axis_dma_read_cmd,
     axis_mem_cmd.master         axis_dma_write_cmd,
 
     //DMA Data streams      

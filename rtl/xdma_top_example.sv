@@ -138,7 +138,7 @@ dma_data_transfer#(
     .rstn							(user_rstn),
 
     //DMA Commands
-    .axis_dma_read_cmd				(axis_dma_read_cmd[i]),
+//    .axis_dma_read_cmd				(axis_dma_read_cmd[i]),
     .axis_dma_write_cmd				(axis_dma_write_cmd[i]),
 
     //DMA Data streams      
