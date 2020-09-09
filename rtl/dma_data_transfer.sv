@@ -36,7 +36,7 @@ module dma_data_transfer#(
 
     //DMA Data streams      
     axi_stream.master           axis_dma_write_data,
-    axi_stream.slave            axis_dma_read_data,
+    // axi_stream.slave            axis_dma_read_data,
 
     //control reg
     input wire[63:0]            transfer_base_addr,

@@ -143,7 +143,7 @@ dma_data_transfer#(
 
     //DMA Data streams      
     .axis_dma_write_data			(axis_dma_write_data[i]),
-    .axis_dma_read_data				(axis_dma_read_data[i]),
+//    .axis_dma_read_data				(),
 
     //control reg
     .transfer_base_addr				({fpga_control_reg[41+i*8],fpga_control_reg[40+i*8]}),
