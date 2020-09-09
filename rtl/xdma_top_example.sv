@@ -187,9 +187,9 @@ endgenerate
 
 // 	reg 									wr_start_r,wr_start_rr;
 	reg 									rd_start_r,rd_start_rr;
-// 	reg [31:0]								data_cnt,rd_data_cnt;
-// 	reg [31:0]								offset;
-// 	reg [31:0]								data_cnt_minus;
+	reg [31:0]								data_cnt,rd_data_cnt;
+	reg [31:0]								offset;
+	reg [31:0]								data_cnt_minus;
 
 // 	reg 									wr_th_en;
 // 	reg [31:0]								wr_th_sum;
