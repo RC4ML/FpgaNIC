@@ -44,12 +44,12 @@ module dma_inf(
     input wire                  user_aresetn,
 
     //DMA Commands
-    axis_mem_cmd.slave          s_axis_dma_read_cmd[3:0],
-    axis_mem_cmd.slave          s_axis_dma_write_cmd[3:0],
+    axis_mem_cmd.slave          s_axis_dma_read_cmd[0:3],
+    axis_mem_cmd.slave          s_axis_dma_write_cmd[0:3],
 
     //DMA Data streams      
-    axi_stream.slave            s_axis_dma_write_data[3:0],
-    axi_stream.master           m_axis_dma_read_data[3:0],
+    axi_stream.slave            s_axis_dma_write_data[0:3],
+    axi_stream.master           m_axis_dma_read_data[0:3],
 
     //Control interface
     //fpga register
@@ -66,7 +66,24 @@ module dma_inf(
 
 );
 
+//	ila_0 rxinf (
+//		.clk(pcie_clk), // input wire clk
+	
+	
+//		.probe0(s_axis_dma_read_cmd[1].valid), // input wire [0:0]  probe0  
+//		.probe1(s_axis_dma_read_cmd[1].ready), // input wire [0:0]  probe1 
+//		.probe2(s_axis_dma_read_cmd[1].address), // input wire [63:0]  probe2 
+//		.probe3(s_axis_dma_read_cmd[1].length), // input wire [31:0]  probe3 
+//		.probe4(s_axis_dma_read_cmd[2].valid), // input wire [0:0]  probe4 
+//		.probe5(s_axis_dma_read_cmd[2].ready), // input wire [0:0]  probe5 
+//		.probe6(0), // input wire [0:0]  probe6 
+//		.probe7({0,s_axis_dma_read_cmd[2].address}) // input wire [511:0]  probe7
+//	);
+
+
+
     reg[511:0][31:0]            fpga_status_reg_r;
+    reg[31:0]                   xdma_axil_rdata;
 
 /*
  * PCIe Signals
@@ -154,7 +171,14 @@ module dma_inf(
     .h2c_dsc_byp_load     (h2c_dsc_byp_load),
     
     .c2h_sts(c2h_sts),                                          // output wire [7 : 0] c2h_sts_0
-    .h2c_sts(h2c_sts)                                           // output wire [7 : 0] h2c_sts_0
+    .h2c_sts(h2c_sts),                                          // output wire [7 : 0] h2c_sts_0
+
+
+    .s_axil_awaddr          (fpga_control_reg[4]),
+    .s_axil_wdata           (fpga_control_reg[5]),
+    .s_axil_araddr          (fpga_control_reg[6]),
+    .xdma_contrl_wr_rd      (fpga_control_reg[7]),
+    .s_axil_rdata           (xdma_axil_rdata)   
   );    
 
 
@@ -162,7 +186,7 @@ module dma_inf(
 
     wire                    bypass_en_a;          // output wire bram_en_a
     wire [ 63:0]            bypass_we_a;          // output wire [63 : 0] bram_we_a
-    wire [ 15:0]            bypass_addr_a;      // output wire [15 : 0] bram_addr_a
+    wire [ 19:0]            bypass_addr_a;      // output wire [15 : 0] bram_addr_a
     wire [511:0]            bypass_wrdata_a;  // output wire [511 : 0] bram_wrdata_a
     wire [511:0]            bypass_rddata_a;  // input wire [511 : 0] bram_rddata_a     
 
@@ -173,7 +197,7 @@ module dma_inf(
         .s_axi_aclk         (pcie_clk),
         .s_axi_aresetn      (pcie_aresetn),
         .s_axi_awid         (axim_control.awid ),
-        .s_axi_awaddr       (axim_control.awaddr[15:0]),
+        .s_axi_awaddr       (axim_control.awaddr[19:0]),
         .s_axi_awlen        (axim_control.awlen),
         .s_axi_awsize       (axim_control.awsize),
         .s_axi_awburst      (axim_control.awburst),
@@ -192,7 +216,7 @@ module dma_inf(
         .s_axi_bvalid       (axim_control.bvalid),
         .s_axi_bready       (axim_control.bready),
         .s_axi_arid         (axim_control.arid),
-        .s_axi_araddr       (axim_control.araddr[15:0]),
+        .s_axi_araddr       (axim_control.araddr[19:0]),
         .s_axi_arlen        (axim_control.arlen),
         .s_axi_arsize       (axim_control.arsize),
         .s_axi_arburst      (axim_control.arburst),
@@ -232,7 +256,111 @@ module dma_inf(
             .bypass_status_reg  (bypass_status_reg)
         
         );
+///////////////////////////degug//////////////////////////
+        reg 									wr_th_en,rd_lat_en;
+        reg [31:0]								wr_th_sum,rd_lat_sum;
+        reg [31:0]								data_cnt;
 
+        always @(posedge pcie_clk)begin
+            if(~pcie_aresetn)begin
+                data_cnt 						<= 1'b0;
+            end
+            else if(data_cnt == 32'h4000)begin
+                data_cnt						<= 1'b0;
+            end
+            else if(axim_control.wready & axim_control.wvalid)begin
+                data_cnt						<= data_cnt + 1'b1;
+            end
+            else begin
+                data_cnt						<= data_cnt;
+            end		
+        end        
+
+        always@(posedge pcie_clk)begin
+            if(~pcie_aresetn)begin
+                wr_th_en						<= 1'b0;
+            end  
+            else if(data_cnt == 32'h4000)begin
+                wr_th_en						<= 1'b0;
+            end
+            else if(axim_control.awready & axim_control.awvalid)begin
+                wr_th_en						<= 1'b1;
+            end		
+            else begin
+                wr_th_en						<= wr_th_en;
+            end
+        end
+    
+        
+        always@(posedge pcie_clk)begin
+            if(~pcie_aresetn)begin
+                wr_th_sum						<= 32'b0;
+            end
+            else if(data_cnt == 32'h4000)begin
+                wr_th_sum						<= 32'b0;
+            end 
+            else if(wr_th_en)begin
+                wr_th_sum						<= wr_th_sum + 1'b1;
+            end
+            else begin
+                wr_th_sum						<= wr_th_sum;
+            end
+        end
+
+	always@(posedge pcie_clk)begin
+		if(~pcie_aresetn)begin
+			rd_lat_en						<= 1'b0;
+		end	
+		else if(axim_control.arready & axim_control.arvalid)begin
+			rd_lat_en						<= ~rd_lat_en;
+		end  
+		else begin
+			rd_lat_en						<= rd_lat_en;
+		end
+	end
+
+	
+	always@(posedge pcie_clk)begin
+		if(~pcie_aresetn)begin
+			rd_lat_sum						<= 32'b0;
+		end
+		else if(axim_control.arready & axim_control.arvalid)begin
+			rd_lat_sum						<= 32'b0;
+		end 
+		else if(rd_lat_en)begin
+			rd_lat_sum						<= rd_lat_sum + 1'b1;
+		end
+		else begin
+			rd_lat_sum						<= rd_lat_sum;
+		end
+	end
+
+
+
+        ila_3 bypass_ila (
+            .clk(pcie_clk), // input wire clk
+        
+        
+            .probe0(axim_control.awvalid), // input wire [0:0]  probe0  
+            .probe1(axim_control.awready), // input wire [0:0]  probe1 
+            .probe2(axim_control.awaddr[19:0]), // input wire [19:0]  probe2 
+            .probe3(axim_control.awlen), // input wire [7:0]  probe3 
+            .probe4(axim_control.wvalid), // input wire [0:0]  probe4 
+            .probe5(axim_control.wready), // input wire [0:0]  probe5 
+            .probe6(axim_control.wdata), // input wire [511:0]  probe6 
+            .probe7(axim_control.arvalid), // input wire [0:0]  probe7 
+            .probe8(axim_control.arready), // input wire [0:0]  probe8 
+            .probe9(axim_control.araddr[19:0]), // input wire [19:0]  probe9 
+            .probe10(axim_control.arlen), // input wire [7:0]  probe10 
+            .probe11(axim_control.rvalid), // input wire [0:0]  probe11 
+            .probe12(axim_control.rready), // input wire [0:0]  probe12 
+            .probe13(axim_control.rdata), // input wire [511:0]  probe13 
+            .probe14(bypass_en_a), // input wire [0:0]  probe14 
+            .probe15(bypass_we_a[0]), // input wire [0:0]  probe15 
+            .probe16(data_cnt[19:0]), // input wire [19:0]  probe16 
+            .probe17(wr_th_sum), // input wire [31:0]  probe17 
+            .probe18(rd_lat_sum) // input wire [31:0]  probe18
+        );
 
 `endif
 ///////////axil
@@ -276,6 +404,26 @@ axi_bram_ctrl_0 dma_axil_bram_ctrl (
   .bram_wrdata_a(bram_wrdata_a),  // output wire [31 : 0] bram_wrdata_a
   .bram_rddata_a(bram_rddata_a)  // input wire [31 : 0] bram_rddata_a
 );
+
+ila_2 ila_dma_axil_bram_ctrl (
+	.clk(pcie_clk), // input wire clk
+
+
+	.probe0(axil_control.awvalid), // input wire [0:0]  probe0  
+	.probe1(axil_control.awready), // input wire [0:0]  probe1 
+	.probe2(axil_control.awaddr), // input wire [31:0]  probe2 
+	.probe3(axil_control.wvalid), // input wire [0:0]  probe3 
+	.probe4(axil_control.wready), // input wire [0:0]  probe4 
+	.probe5(axil_control.wdata), // input wire [31:0]  probe5 
+	.probe6(axil_control.arvalid), // input wire [0:0]  probe6 
+	.probe7(axil_control.arready), // input wire [0:0]  probe7 
+	.probe8(axil_control.araddr), // input wire [31:0]  probe8 
+	.probe9(axil_control.rvalid), // input wire [0:0]  probe9 
+    .probe10(axil_control.rready), // input wire [31:0]  probe10
+    .probe11(axil_control.rdata) // input wire [31:0]  probe10
+);
+
+
 
 genvar i;
 generate for(i = 0; i < 4; i++) begin
@@ -583,6 +731,22 @@ axis_clock_converter_32 axis_clock_converter_tlb_page_crossing (
    .regPageCrossingCount_V_ap_vld(tlb_page_crossing_count_valid)  // output wire regPageCrossingCount_V_ap_vld
  );
 
+//ila_1 ilatlb (
+//	.clk(user_clk), // input wire clk
+
+
+//	.probe0(axis_dma_read_cmd_tvalid), // input wire [0:0]  probe0  
+//	.probe1(axis_dma_read_cmd_tready), // input wire [0:0]  probe1 
+//	.probe2({dma_read_cmd_counter,dma_read_length_counter,h2c_sts[i],c2h_sts[i],16'h0}), // input wire [95:0]  probe2 
+//	.probe3(axis_dma_read_cmd_to_tlb_tvalid), // input wire [0:0]  probe3 
+//	.probe4(axis_dma_read_cmd_to_tlb_tready), // input wire [0:0]  probe4 
+//	.probe5(axis_dma_read_cmd_to_tlb_tdata), // input wire [95:0]  probe5 
+//	.probe6(axis_tlb_interface_valid), // input wire [0:0]  probe6 
+//	.probe7(axis_tlb_interface_ready), // input wire [0:0]  probe7 
+//	.probe8(axis_tlb_interface_data) // input wire [135:0]  probe8
+//);
+
+
 
  /*
   * Clock Conversion Command
@@ -816,6 +980,7 @@ always @(posedge pcie_clk)begin
 `else
     fpga_status_reg_r[1]            <= 32'b0;
 `endif
+    fpga_status_reg_r[3]            <= xdma_axil_rdata;
     fpga_status_reg_r[511:52]       <= fpga_status_reg[511:52];
 
 end
