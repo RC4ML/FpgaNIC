@@ -56,6 +56,30 @@ void XDMAController::writeTlb(unsigned long vaddr, unsigned long paddr, bool isB
    writeReg(13, (uint32_t) 0);
    writeReg(13, (uint32_t) 1);
 
+   writeReg(14, (uint32_t) vaddr);
+   writeReg(15, (uint32_t) (vaddr >> 32));
+   writeReg(16, (uint32_t) paddr);
+   writeReg(17, (uint32_t) (paddr >> 32));
+   writeReg(18, (uint32_t) isBase);
+   writeReg(19, (uint32_t) 0);
+   writeReg(19, (uint32_t) 1);
+
+   writeReg(20, (uint32_t) vaddr);
+   writeReg(21, (uint32_t) (vaddr >> 32));
+   writeReg(22, (uint32_t) paddr);
+   writeReg(23, (uint32_t) (paddr >> 32));
+   writeReg(24, (uint32_t) isBase);
+   writeReg(25, (uint32_t) 0);
+   writeReg(25, (uint32_t) 1);
+
+   writeReg(26, (uint32_t) vaddr);
+   writeReg(27, (uint32_t) (vaddr >> 32));
+   writeReg(28, (uint32_t) paddr);
+   writeReg(29, (uint32_t) (paddr >> 32));
+   writeReg(30, (uint32_t) isBase);
+   writeReg(31, (uint32_t) 0);
+   writeReg(31, (uint32_t) 1);
+
 #ifdef PRINT_DEBUG
    printf("done\n");fflush(stdout);
 #endif

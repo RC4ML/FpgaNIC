@@ -76,12 +76,14 @@ int main(int argc, char *argv[]) {
 	uint64_t* dmaBuffer =  (uint64_t*) fpga::XDMA::allocate(1024*1024*480);
 	param.addr = (uint64_t)dmaBuffer;
 	param.cpu_buf = init_buf;
+	param.map_d_ptr = (void *)d_A;
+	param.mem_size = gpu_mem_size;
 
 	//useCUDA();
 	//init_hbuf_walking_bit(init_buf,length);
 	
 	//test_throughput(param);
-	bypass_reg(param);
+	stream_transfer(param);
 
     // uint32_t wr_th_sum = controller->readReg(566);
     // uint32_t rd_th_sum = controller->readReg(567);
@@ -175,6 +177,8 @@ void set_page_table(){
 		gdr_info_t info;
         ASSERT_EQ(gdr_get_info(g, mh, &info), 0);
 		if(SHOWINFO){
+			cout <<	"d_A: " << hex << d_A << dec << endl;
+			cout <<	"map_d_ptr: " << hex << map_d_ptr << dec << endl;
 			cout << "info.va: " << hex << info.va << dec << endl;
 			cout << "info.mapped_size: " << info.mapped_size << endl;
 			cout << "info.page_size: " << info.page_size << endl;
@@ -184,9 +188,13 @@ void set_page_table(){
         
 
 		int off = info.va - d_A;
+		if(SHOWINFO){
+			cout<<"off:"<<off<<endl;
+		}
 		buf_ptr = (uint32_t *)((char *)map_d_ptr + off);
 		gdr_copy_to_mapping(mh, buf_ptr + copy_offset/4, init_buf, copy_size);
 		if(SHOWINFO){
+			cout<<"buf_ptr:"<<buf_ptr<<endl;
 			cout<<"write to gpu mem done!\n";
 		}
 	}while(0);
