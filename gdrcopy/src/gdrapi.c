@@ -225,14 +225,14 @@ int gdr_pin_buffer(gdr_t g, unsigned long addr, size_t size, uint64_t p2p_token,
     params.p2p_token = p2p_token;
     params.va_space = va_space;
     params.handle = 0;
-	params.pt=(__u64*)malloc(8192*sizeof(__u64));
+	params.pt=(__u64*)malloc(655360*sizeof(__u64));//40G pages
 	__u64* tmp = params.pt;
 	m_page_table.page_entries = 0;
     retcode = ioctl(g->fd, GDRDRV_IOC_PIN_BUFFER, &params);
 	params.pt = tmp;
 	//printf("pages_entrys in api level:%lld\n",params.table_entries);
 	m_page_table.page_entries = params.table_entries;
-	m_page_table.pages = (uint64_t*)malloc(8192*sizeof(uint64_t));
+	m_page_table.pages = (uint64_t*)malloc(655360*sizeof(uint64_t));
 	
 	for(int i=0;i<params.table_entries;i++){
 		long t = 0;

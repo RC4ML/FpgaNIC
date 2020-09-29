@@ -1,1 +1,1 @@
-cmd_/home/cj/xdma/driver/xdma_driver.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000  --build-id  -T ./scripts/module-common.lds -o /home/cj/xdma/driver/xdma_driver.ko /home/cj/xdma/driver/xdma_driver.o /home/cj/xdma/driver/xdma_driver.mod.o;  true
+cmd_/home/amax4/xdma/driver/xdma_driver.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000  --build-id  -T ./scripts/module-common.lds -o /home/amax4/xdma/driver/xdma_driver.ko /home/amax4/xdma/driver/xdma_driver.o /home/amax4/xdma/driver/xdma_driver.mod.o;  true

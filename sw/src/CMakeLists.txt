@@ -3,7 +3,9 @@ cmake_minimum_required (VERSION 3.1)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/")
 
 project (DmaDriverExample)
+
 find_package(CUDA)
+SET(CUDA_SEPARABLE_COMPILATION ON)#do not add this line above the find package
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 
 # Set up compilation options
@@ -14,13 +16,15 @@ set (CMAKE_C_STANDARD 11)
 
 set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread -mavx")
 set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pthread -mavx")
-set(CMAKE_C_COMPILER "/usr/bin/nvcc")
-#find_package(Boost COMPONENTS program_options REQUIRED)
+add_compile_options(-O0)
+#set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -rdc=true ")
 
 if(CUDA_ENABLE)
     enable_language(CUDA)
 endif()
 add_definitions(-mavx512f)
+
+
 
 # Set up target for main executable
 CUDA_ADD_EXECUTABLE(dma-example
@@ -29,7 +33,11 @@ CUDA_ADD_EXECUTABLE(dma-example
     fpga/XDMA.cpp
     fpga/XDMAController.cpp
     fpga/MemoryManager.cpp
-	cuda/vectoradd.cu
+	cuda/interface.cu
+	cuda/kernel.cu
+	cuda/network.cu
+	cuda/util.cu
+	cuda/network_kernel.cu
 	tool/test.cpp
     )
 target_link_libraries(dma-example

@@ -589,15 +589,21 @@ static int gdrdrv_pin_buffer(gdr_info_t *info, void __user *_params)
     {
         int i;
         gdr_dbg("page table entries: %d\n", page_table->entries);
-		params.pt = (__u64*)kmalloc(8192*sizeof(__u64),GFP_KERNEL);
+		//params.pt = (__u64*)kmalloc(655360*sizeof(__u64),GFP_KERNEL);
+		params.pt = (__u64*)vmalloc(655360*sizeof(__u64));
 		params.table_entries = page_table->entries;
-        for (i=0; i<MIN(20,page_table->entries); ++i) {
+        for (i=0; i<MIN(21,page_table->entries); ++i) {
             gdr_dbg("page[%d]=0x%016llx%s\n", i, page_table->pages[i]->physical_address, (i>19)?"and counting":"");
         }
+		gdr_dbg("page table list some done!\n");
+		gdr_dbg("0x%016llx\n",params.pt);
+		if(params.pt==0){
+			return;
+		}
 		for (i=0; i<page_table->entries; ++i) {//to be fixed
 			params.pt[i] = page_table->pages[i]->physical_address;
         }
-		
+		gdr_dbg("page table transfer done!\n");
     }
 
     // here a typical driver would use the page_table to fill in some HW

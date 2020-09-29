@@ -1,17 +1,12 @@
-#ifndef VECTORADD_CUH
-#define VECTORADD_CUH
+#ifndef KERNEL_CUH
+#define KERNEL_CUH
+
 #include <stdio.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include "main.h"
-extern "C"
-void useCUDA();
-void write_bypass(void* addr);
-void read_bypass(void* addr);
-void data_mover(param_mover_t param_mover);
-void test_mover(void* write_count_addr,void* read_count_addr,void* v_addr);
+#include "network.cuh"
 
-typedef struct param_mov_thread{
+typedef struct param_cuda_thread{
 	volatile unsigned int* devReadCountAddr0;
 	volatile unsigned int* devReadCountAddr1;
 	volatile unsigned int* devReadCountAddr2;
@@ -34,16 +29,16 @@ typedef struct param_mov_thread{
 
 	int threadsPerBlock;
 	int blocks;
-}param_mov_thread_t;
+	uint64_t data_length;
+	int offset;
+	int buffer_pages;
+}param_cuda_thread_t;
 
-#define ErrCheck(ans) { gpuAssert((ans), __FILE__, __LINE__); }
-inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
-{
-   if (code != cudaSuccess) 
-   {
-      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
-      if (abort) exit(code);
-   }
-}
+
+ __global__ void movThread(param_cuda_thread_t param);
+ __global__ void writeBypassReg(volatile unsigned int *dev_addr,int *blocks);
+ __global__ void readBypassReg(volatile unsigned int *dev_addr,int *blocks);
+ __global__ void writeReg(volatile unsigned int *dev_addr,int *blocks);
+ __global__ void compute(int * data,size_t length,int offset);
 
 #endif

@@ -1,1 +1,1 @@
-cmd_/home/cj/xdma/driver/xdma_driver.mod := { echo  /home/cj/xdma/driver/xdma_driver.o; echo; } > /home/cj/xdma/driver/xdma_driver.mod
+cmd_/home/amax4/xdma/driver/xdma_driver.mod := { echo  /home/amax4/xdma/driver/xdma_driver.o; echo; } > /home/amax4/xdma/driver/xdma_driver.mod

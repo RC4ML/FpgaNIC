@@ -13,6 +13,7 @@ typedef struct param_test{
 	uint32_t *cpu_buf;
 	void *map_d_ptr;
 	uint32_t mem_size;
+	unsigned int* tlb_start_addr;
 }param_test_t;
 
 typedef struct param_mover{
@@ -30,5 +31,16 @@ typedef struct param_mover{
 	unsigned int* dev_addr1;
 	unsigned int* dev_addr2;
 	unsigned int* dev_addr3;
+
+	uint64_t data_length;
+	uint64_t buffer_pages;
+	uint32_t offset;
 }param_mover_t;
+
+typedef struct param_interface_socket{
+	unsigned int* buffer_addr;
+	unsigned int mac,ip,port;
+	unsigned int* tlb_start_addr;
+	fpga::XDMAController* controller;
+}param_interface_socket_t;
 #endif

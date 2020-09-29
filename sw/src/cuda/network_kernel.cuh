@@ -1,0 +1,18 @@
+#ifndef network_kernel_CUH
+#define network_kernel_CUH
+
+#include <stdio.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include "main.h"
+#include "util.cuh"
+#include "network.cuh"
+
+__global__ void socket_send(socket_context_t* ctx,int* socket,int * data_addr,size_t length,sock_addr_t dst_addr);
+
+__global__ void socket_recv(socket_context_t* ctx,int* socket,int * data_addr,size_t length);//check
+
+__global__ void send_kernel(socket_context_t* ctx,unsigned int *dev_buffer,fpga_registers_t registers);//check
+
+__global__ void recv_kernel(socket_context_t* ctx,unsigned int *dev_buffer,fpga_registers_t registers);//check
+#endif

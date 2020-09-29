@@ -43,7 +43,6 @@
 #include <sys/mman.h>
 #include <immintrin.h>                   // include used to acces the intrinsics instructions
 
-
 #define MAP_SIZE_BYPASS (1024*1024UL)
 #define MAP_SIZE (4*1024UL)
 /* ltoh: little to host */

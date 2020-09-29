@@ -29,7 +29,7 @@
 #include <gdrapi.h>
 #include "main.h"
 #include "common.hpp"
-#include "cuda/vectoradd.cuh"
+#include "cuda/interface.cuh"
 #include "tool/test.hpp"
 extern "C"
 void useCUDA();
@@ -39,7 +39,7 @@ using namespace gdrcopy::test;
 
 
 #define SHOWINFO 0
-size_t gpu_mem_size = 220*1024*1024;//bytes
+size_t gpu_mem_size = size_t(8)*1024*1024*1024;//bytes  220*1024*1024  size_t(8)*1024*1024*1024
 int dev_id = 0;//gpu device
 CUdevice dev;
 CUcontext dev_ctx;
@@ -50,15 +50,6 @@ gdr_mh_t mh;
 uint32_t *buf_ptr;
 void *map_d_ptr  = NULL;
 
-// __global__ void VecAdd(float** A, float** C){
-// 	// printf("test\n");
-// 	printf("%d %d %d %d\n", blockIdx.x,blockIdx.y, threadIdx.x,threadIdx.y);
-// 	int i = blockIdx.x * blockDim.x + threadIdx.x;
-// 	int j = blockIdx.y * blockDim.y + threadIdx.y;
-// 	C[i][j] = A[i][j]*A[i][j];
-// 	printf("%d %d %f\n",i,j,C[i][j]);
-	
-// }
 
 int main(int argc, char *argv[]) {
 	set_page_table();
@@ -66,50 +57,33 @@ int main(int argc, char *argv[]) {
 		cout<<"m_page_table.page_entries:"<<m_page_table.page_entries<<endl;
 	}
 	for(int i=0;i<m_page_table.page_entries-1;i++){
-		long t = m_page_table.pages[i+1]-m_page_table.pages[i];
+		size_t t = m_page_table.pages[i+1]-m_page_table.pages[i];
 		if(t!=65536){
 			cout<<t<<"###############################error!\n";
 		}
 	}
 	param_test_t param;
 	param.controller = fpga::XDMA::getController();
-	uint64_t* dmaBuffer =  (uint64_t*) fpga::XDMA::allocate(1024*1024*480);
+	uint64_t* dmaBuffer =  (uint64_t*) fpga::XDMA::allocate(1024);//1024*1024*480
 	param.addr = (uint64_t)dmaBuffer;
 	param.cpu_buf = init_buf;
 	param.map_d_ptr = (void *)d_A;
 	param.mem_size = gpu_mem_size;
+	param.tlb_start_addr = (unsigned int *)dmaBuffer;
 
-	//useCUDA();
-	//init_hbuf_walking_bit(init_buf,length);
-	
-	//test_throughput(param);
-	stream_transfer(param);
+	// param.controller->writeReg(160,(unsigned int)param.addr);
+	// param.controller->writeReg(161,(unsigned int)(param.addr>>32));
 
-    // uint32_t wr_th_sum = controller->readReg(566);
-    // uint32_t rd_th_sum = controller->readReg(567);
-	// uint32_t rd_lat_sum = controller->readReg(568);
-	// uint32_t error_count = controller->readReg(569);
-    // uint32_t error_index = controller->readReg(570);
-    // cout<<"wr_th_sum:"<<wr_th_sum<<endl;
-    // cout<<"rd_th_sum:"<<rd_th_sum<<endl;
-    // cout<<"rd_lat_sum:"<<rd_lat_sum<<endl;
-    // cout<<"write speed:"<<1.0*length*250/wr_th_sum/1000<<endl;
-    // cout<<"read speed:"<<1.0*length*250/rd_th_sum/1000<<endl;
-	// cout<<"read latency:"<<1.0*rd_lat_sum*4/1000 << " us " <<endl;
-	// cout<<"error_count:"<<error_count<<endl;
-	// cout<<"error_index:"<<error_index<<endl;
-	// controller ->getRegAddr(36);
+	//stream_transfer(param);
+	socket_send_test(param);
+	sleep(1000);
 	// uint64_t r_addr = controller ->getBypassAddr(0);
 	// cout<<"addr:"<<r_addr<<endl;
 	// uint64_t* a = (uint64_t*)r_addr;
 	// for(int i=0;i<8;i++){
 	// 	a[i]=i;
 	// }
-	//*a = _mm512_set_epi64 (value[7],value[6],value[5],value[4],value[3],value[2],value[1],value[0]);
-	//memcpy(a,value,64);
-	 //controller ->writeBypassReg(15, value);
-	 //controller ->writeBypassReg(15, value+8);
-	//write((void*)r_addr);
+
 
     fpga::XDMA::clear();
     close_device();
@@ -156,9 +130,18 @@ void set_page_table(){
 	ASSERTDRV(cuDevicePrimaryCtxRetain(&dev_ctx, dev));
     ASSERTDRV(cuCtxSetCurrent(dev_ctx));
 	ASSERTDRV(gpuMemAlloc(&d_A, size));
+	if(SHOWINFO){
+		cout<<"device malloc done!\n";
+	}
 	init_buf = (uint32_t *)malloc(size);
 	ASSERT_NEQ(init_buf, (void*)0);
+	if(SHOWINFO){
+		cout<<"initbuf malloc done!\n";
+	}
 	g = gdr_open();
+	if(SHOWINFO){
+		cout<<"gdr opened!\n";
+	}
 	ASSERT_NEQ(g, (void*)0);
 
 	do{
@@ -189,7 +172,7 @@ void set_page_table(){
 
 		int off = info.va - d_A;
 		if(SHOWINFO){
-			cout<<"off:"<<off<<endl;
+			cout<<"offset:"<<off<<endl;
 		}
 		buf_ptr = (uint32_t *)((char *)map_d_ptr + off);
 		gdr_copy_to_mapping(mh, buf_ptr + copy_offset/4, init_buf, copy_size);
