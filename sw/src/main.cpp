@@ -31,6 +31,7 @@
 #include "common.hpp"
 #include "cuda/interface.cuh"
 #include "tool/test.hpp"
+#include "tool/input.hpp"
 extern "C"
 void useCUDA();
 void write(void* addr);
@@ -56,7 +57,7 @@ int main(int argc, char *argv[]) {
 	if(SHOWINFO){
 		cout<<"m_page_table.page_entries:"<<m_page_table.page_entries<<endl;
 	}
-	for(int i=0;i<m_page_table.page_entries-1;i++){
+	for(unsigned int i=0;i<m_page_table.page_entries-1;i++){
 		size_t t = m_page_table.pages[i+1]-m_page_table.pages[i];
 		if(t!=65536){
 			cout<<t<<"###############################error!\n";
@@ -71,12 +72,14 @@ int main(int argc, char *argv[]) {
 	param.mem_size = gpu_mem_size;
 	param.tlb_start_addr = (unsigned int *)dmaBuffer;
 
+
 	// param.controller->writeReg(160,(unsigned int)param.addr);
 	// param.controller->writeReg(161,(unsigned int)(param.addr>>32));
 
 	//stream_transfer(param);
 	socket_send_test(param);
-	sleep(1000);
+	sleep(3);
+	start_cmd_control(param.controller);
 	// uint64_t r_addr = controller ->getBypassAddr(0);
 	// cout<<"addr:"<<r_addr<<endl;
 	// uint64_t* a = (uint64_t*)r_addr;

@@ -5,3 +5,4 @@ iprepo/
 *.so
 *.o
 /.vscode
+sw/src/.vscode/settings.json

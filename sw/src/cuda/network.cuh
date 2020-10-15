@@ -19,31 +19,42 @@ socket_context_t* get_socket_context(unsigned int *dev_buffer,unsigned int *tlb_
 
 __global__ void create_socket(socket_context_t* ctx,int* socket);//check
 
-__global__ void socket_listen(socket_context_t* ctx,int socket, int port);//check
+__global__ void socket_listen(socket_context_t* ctx,int *socket, int port);//check
 
 // __global__ void socket_send(socket_context_t* ctx,int* socket,int * data_addr,size_t length,sock_addr_t dst_addr);//check
 
 // __global__ void socket_recv(socket_context_t* ctx,int* socket,int * data_addr,size_t length);//check
 
 
-__device__  int connect(socket_context_t* ctx,int socket,sock_addr_t addr);//check
+__global__  void connect(socket_context_t* ctx,int socket_id,sock_addr_t addr);//check
+
+__global__ void accept(socket_context_t* ctx,int socket_id,connection_t* connection);
 
 unsigned int* map_reg_4(int reg,fpga::XDMAController* controller);//check
 
-__device__ unsigned int get_info_tbl_index(socket_context_t* ctx);//check
+unsigned int* map_reg_64(int reg,fpga::XDMAController* controller);
 
-__device__ void move_data(socket_context_t* ctx,int block_length,int *data_addr,int addr_offset);//check
+__device__ void move_data_to_send_buffer(socket_context_t* ctx,int buffer_id,int block_length,int *data_addr);//check
 
-__device__ void move_data_recv(socket_context_t* ctx,int block_length,int *data_addr,int addr_offset);//check
+__device__ void move_data_from_recv_buffer(socket_context_t* ctx,int buffer_id,int block_length,int *data_addr);//check
 
-__device__ int get_session(socket_context_t* ctx,int socket,sock_addr_t dst_addr);//check
+__device__ connection_t get_session(socket_context_t* ctx,int socket,sock_addr_t dst_addr);//check
 
 __device__ int get_session_first(socket_context_t* ctx,int socket);//check
 
 __device__ bool check_socket_validation(socket_context_t* ctx,int socket);//check
 
-__device__ recv_info_t read_info(socket_context_t* ctx,int index);//check
-
 __device__ int enroll(socket_context_t* ctx,int socket_id,int *data_addr,size_t length);//check
 
+__device__ void write_bypass(volatile unsigned int *dev_addr,unsigned int *data);
+
+__device__ void read_info(socket_context_t* ctx);
+
+__device__ int get_empty_buffer(socket_context_t* ctx);
+
+__device__ int accept_list_enroll(socket_context_t* ctx,int socket_id);
+
+__device__ int get_accept_list_index(socket_context_t* ctx,int port);
+
+__device__ int fetch_head(socket_context_t* ctx,int buffer_id);
 #endif

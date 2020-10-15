@@ -87,7 +87,7 @@ namespace gdrcopy {
 
         void init_hbuf_linear_ramp(uint32_t *h_buf, size_t size)
         {
-            uint32_t base_value = 0x3F4C5E6A; // 0xa55ad33d;
+            //uint32_t base_value = 0x3F4C5E6A; // 0xa55ad33d;
             unsigned w;
             ASSERT_NEQ(h_buf, (void*)0);
             ASSERT_EQ(size % 4, 0U);

@@ -8,11 +8,20 @@
 #include "util.cuh"
 #include "network.cuh"
 
-__global__ void socket_send(socket_context_t* ctx,int* socket,int * data_addr,size_t length,sock_addr_t dst_addr);
+__global__ void socket_send(socket_context_t* ctx,int* socket,int * data_addr,size_t length);
+
+__global__ void socket_send(socket_context_t* ctx,connection_t* connection,int * data_addr,size_t length);
 
 __global__ void socket_recv(socket_context_t* ctx,int* socket,int * data_addr,size_t length);//check
+
+__global__ void socket_recv(socket_context_t* ctx,connection_t* connection,int * data_addr,size_t length);//check
+
 
 __global__ void send_kernel(socket_context_t* ctx,unsigned int *dev_buffer,fpga_registers_t registers);//check
 
 __global__ void recv_kernel(socket_context_t* ctx,unsigned int *dev_buffer,fpga_registers_t registers);//check
+
+__device__ void _socket_send(socket_context_t* ctx,int buffer_id,int * data_addr,size_t length);
+
+__device__ void _socket_recv(socket_context_t* ctx,int buffer_id,int * data_addr,size_t length);
 #endif

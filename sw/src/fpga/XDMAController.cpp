@@ -108,7 +108,7 @@ uint64_t XDMAController::getRegAddr(uint32_t addr){
 }
 uint64_t XDMAController::getBypassAddr(uint32_t addr){
 	volatile __m512i* wPtr =  (__m512i*) (((uint64_t) by_base) + (uint64_t) ((uint32_t) addr << 6));
-	cout<<(uint64_t)wPtr<<endl;
+	cout<< (uint64_t) by_base<<" "<<(uint64_t)wPtr<<endl;
 	return (uint64_t)wPtr;
 }
 

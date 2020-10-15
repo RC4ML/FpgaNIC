@@ -2,6 +2,9 @@
 cmake_minimum_required (VERSION 3.1)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/")
 
+SET(CMAKE_C_COMPILER "/usr/bin/gcc-6")   # must be above project
+SET(CMAKE_CXX_COMPILER "/usr/bin/g++-6")
+
 project (DmaDriverExample)
 
 find_package(CUDA)
@@ -16,6 +19,9 @@ set (CMAKE_C_STANDARD 11)
 
 set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread -mavx")
 set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pthread -mavx")
+
+
+
 add_compile_options(-O0)
 #set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -rdc=true ")
 
@@ -23,7 +29,7 @@ if(CUDA_ENABLE)
     enable_language(CUDA)
 endif()
 add_definitions(-mavx512f)
-
+add_definitions("-Wall -g")
 
 
 # Set up target for main executable
@@ -39,6 +45,7 @@ CUDA_ADD_EXECUTABLE(dma-example
 	cuda/util.cu
 	cuda/network_kernel.cu
 	tool/test.cpp
+	tool/input.cpp
     )
 target_link_libraries(dma-example
 	${Boost_LIBRARIES}

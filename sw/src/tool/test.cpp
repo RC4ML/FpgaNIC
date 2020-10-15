@@ -6,7 +6,6 @@ using namespace std;
 
 void socket_send_test(param_test_t param_in){
 	param_interface_socket_t param_out;
-	uint32_t buffer_size = 200*1024*1024;
 	param_out.tlb_start_addr = param_in.tlb_start_addr;
 	param_out.mac	=	111;
 	param_out.ip	=	0xabda8c1;

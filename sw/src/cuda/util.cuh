@@ -12,7 +12,15 @@
 #define MAX_CMD 50
 #define MAX_BLOCK_SIZE 2*1024*1024
 #define MAX_INFO_NUM 1024
+#define MAX_BUFFER_NUM 4
+#define SINGLE_BUFFER_LENGTH 25*1024*1024
+#define TOTAL_BUFFER_LENGTH 100*1024*1024
 
+#define INFO_BUFFER_LENGTH 2*1024*1024
+#define ALMOST_FULL_LENGTH 2*1024*1024
+
+#define FLOW_CONTROL_RATIO 0.5
+#define MAX_ACCEPT_LIST_LENGTH 64
 #define ETH_NAME    "eno1"
 
 #define FIRST_THREAD_IN_BLOCK() ((threadIdx.x + threadIdx.y + threadIdx.z) == 0)
@@ -52,12 +60,9 @@ typedef	struct sock_addr{
 
 typedef struct fpga_registers{
 	volatile unsigned int * read_count;
-	volatile unsigned int* send_write_count;
-	volatile unsigned int* recv_read_count;
 
 	volatile unsigned int* con_session_status;
-	volatile unsigned int* send_read_count;
-	volatile unsigned int* recv_write_count;
+
 	volatile unsigned int* listen_status;
 	volatile unsigned int* listen_port;
 	volatile unsigned int* listen_start;
@@ -66,74 +71,81 @@ typedef struct fpga_registers{
 	volatile unsigned int* conn_port;
 	volatile unsigned int* conn_start;
 
-	volatile unsigned int* send_info_session_id;
-	volatile unsigned int* send_info_addr_offset;
-	volatile unsigned int* send_info_length;
-	volatile unsigned int* send_info_start;
+	volatile unsigned int* conn_response;
+
+
+	//bypass
+	volatile unsigned int* send_data_cmd_bypass_reg;
+	volatile unsigned int* recv_read_count_bypass_reg;
 }fpga_registers_t;
 
-typedef struct send_info{
-	unsigned int addr_offset;
-	unsigned int length;
+
+
+typedef struct connection_node{
 	int session_id;
-	int valid;
-}send_info_t;
-
-
-typedef struct recv_info{
-	unsigned int ip;
-	unsigned int src_port;
-	unsigned int dst_port;
-	unsigned int length;
-	int session_id;
-	int session_close;
-	unsigned int addr_offset;
-}recv_info_t;
-
-typedef struct session_node{
-	unsigned int session_id;
-	int ip;
-	int port;
+	int src_ip;
+	int src_port;
+	int buffer_id;
 	bool valid;
-}session_node_t;
+}connection_t;
 
-typedef struct enroll_node{
-	int socket_id;
-	int session_id;
-	int port;
-	int type;
-	int done;
-	int *data_addr;
-	size_t length;
-	size_t cur_length;
-}enroll_node_t;
+
 
 typedef struct socket_type{
-	int type;
+	int buffer_id;
+	int valid;
 	int port;
-	unsigned int session_id;
+	int is_listening;
 }socket_type_t;
 
+typedef struct buffer_type{
+	int session_id;
+	int valid;
+	int socket_id;
+	int type;//0 for socket   1 for connection
+	connection_t* connection;
+}buffer_type_t;
+
+typedef struct accept_node{
+	int socket_id;
+	int listening_port;
+	int valid;
+	int done;
+	int src_ip;
+	int src_port;
+	int buffer_id;
+	int session_id;
+
+}accept_node_t;
 typedef struct socket_context{
+	volatile unsigned long send_read_count[MAX_BUFFER_NUM];
+	volatile unsigned long send_write_count[MAX_BUFFER_NUM];
+	volatile unsigned long recv_read_count[MAX_BUFFER_NUM];
+
+	bool buffer_valid[MAX_BUFFER_NUM];
+	int send_buffer_offset[MAX_BUFFER_NUM];
+	int recv_buffer_offset[MAX_BUFFER_NUM];
+	buffer_type_t buffer_info[MAX_BUFFER_NUM];
+	int buffer_read_count_record[MAX_BUFFER_NUM];//todo init=1
+
+	int buffer_used;
+	int info_offset;
+	int info_count;
+
 	volatile unsigned int* send_buffer;//check
 	volatile unsigned int* recv_buffer;//check
 	volatile unsigned int* info_buffer;//check
 	int socket_num;//check
 	socket_type_t	socket_info[1024];
-	session_node_t session_tbl[1024][256];
-	send_info_t send_info_tbl[MAX_CMD];
-	enroll_node_t enroll_list[128];
-	int enroll_list_pointer;//check
-	unsigned int send_info_tbl_index;//check
-	unsigned int send_info_tbl_pointer;//check
+	accept_node_t   accept_list[MAX_ACCEPT_LIST_LENGTH];
+	int accept_num;
+	connection_t connection_tbl[1024];
+	
 	int mutex;//check
-	int current_send_addr_offset;//check
+
 	//registers write
 	volatile unsigned int* read_count;//check
 
-	volatile unsigned int* send_write_count;//check
-
-	volatile unsigned int* recv_read_count;//check
 
 	//registers read
 	volatile unsigned int* con_session_status;//check
@@ -146,14 +158,12 @@ typedef struct socket_context{
 	volatile unsigned int* conn_port;
 	volatile unsigned int* conn_start;
 
-	volatile unsigned int* send_info_session_id;
-	volatile unsigned int* send_info_addr_offset;
-	volatile unsigned int* send_info_length;
-	volatile unsigned int* send_info_start;
+	volatile unsigned int* conn_response;
 
-	volatile unsigned int* send_read_count;//check
 
-	volatile unsigned int* recv_write_count;//check
+	//bypass
+	volatile unsigned int* send_data_cmd_bypass_reg;
+	volatile unsigned int* recv_read_count_bypass_reg;
 }socket_context_t;
 
 #endif

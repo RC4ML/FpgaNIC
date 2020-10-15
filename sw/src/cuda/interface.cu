@@ -6,10 +6,7 @@
 
 void socket_sample(param_interface_socket_t param_in){
 	socket_context_t* context = get_socket_context(param_in.buffer_addr,param_in.tlb_start_addr,param_in.controller);
-	int user_blocks=4;
-	int user_thread_num=256;
-	dim3 threads_per_block(user_thread_num,1);	
-	dim3 num_blocks(user_blocks,1);	  
+
 	int * data;
 	size_t length = 4*256*1024*1024;
 	cudaMalloc(&data,length);
@@ -26,15 +23,12 @@ void socket_sample(param_interface_socket_t param_in){
 
 	create_socket<<<1,1,0,stream>>>(context,socket1);
 	compute<<<1,1024,0,stream>>>(data,length,3);
-	socket_send<<<1,2,0,stream>>>(context,socket1,data,1024,addr);
-	// sleep(10);
-	// printf("%x\n",param_in.controller.readReg());
-	// printf("%x\n",param_in.controller.readReg());
-	// printf("%x\n",param_in.controller.readReg());
-	// printf("%x\n",param_in.controller.readReg());
-	// printf("%x\n",param_in.controller.readReg());
-	// printf("%x\n",param_in.controller.readReg());
-	// printf("%x\n",param_in.controller.readReg());
+	connect<<<1,0,0,stream>>>(context,*socket1,addr);
+	socket_send<<<1,2,0,stream>>>(context,socket1,data,1024);
+	// create_socket<<<1,1,0,stream>>>(context,socket1);
+	// socket_listen<<<1,1,0,stream>>>(context,socket1,1234);
+	// socket_recv<<<1,1,0,stream>>>(context,socket1,data,1024);
+
 }
 
 
