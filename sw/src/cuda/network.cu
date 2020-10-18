@@ -85,6 +85,7 @@ __global__ void connect(socket_context_t* ctx,int socket_id,sock_addr_t addr){
 
 		*(ctx->conn_ip)		=	addr.ip;
 		*(ctx->conn_port)	=	addr.port;
+		//buffer_id todo
 		*(ctx->conn_start)	=	1;
 		
 		volatile int res = wait_done(ctx->con_session_status,17);
@@ -407,10 +408,11 @@ __device__ void read_info(socket_context_t* ctx){
 					ctx->accept_list[list_index].buffer_id		= buffer_id;
 					ctx->accept_list[list_index].done			= 1;
 
-					*(ctx->conn_response)	=	0x20000000+buffer_id;
+					*(ctx->conn_response)	=	0x20000000+buffer_id;//todo
 				}
 
 			}else{
+				printf("accepting failed, no more buffer\n");
 				*(ctx->conn_response)	=	0x10000000;
 			}
 			
