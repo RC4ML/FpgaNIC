@@ -108,7 +108,7 @@ uint64_t XDMAController::getRegAddr(uint32_t addr){
 }
 uint64_t XDMAController::getBypassAddr(uint32_t addr){
 	volatile __m512i* wPtr =  (__m512i*) (((uint64_t) by_base) + (uint64_t) ((uint32_t) addr << 6));
-	cout<< (uint64_t) by_base<<" "<<(uint64_t)wPtr<<endl;
+	// cout<< (uint64_t) by_base<<" "<<(uint64_t)wPtr<<endl;
 	return (uint64_t)wPtr;
 }
 
@@ -117,7 +117,7 @@ void XDMAController::writeBypassReg(uint32_t addr, uint64_t* value)
    if(checkBypass() == 1){
       volatile __m512i* wPtr = (__m512i*) (((uint64_t) by_base) + (uint64_t) ((uint32_t) addr << 6));
       // *wPtr = _mm512_set_epi32 (value[15], value[14], value[13], value[12], value[11], value[10], value[9], value[8], value[7],value[6],value[5],value[4],value[3],value[2],value[1],value[0]);
-	  cout<<(uint64_t)wPtr<<endl;
+	//   cout<<(uint64_t)wPtr<<endl;
       *wPtr = _mm512_set_epi64 (value[7],value[6],value[5],value[4],value[3],value[2],value[1],value[0]);
    }else{
       cout<<"bypass disabled, write failed!\n";

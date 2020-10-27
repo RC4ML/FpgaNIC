@@ -26,9 +26,9 @@ __global__ void socket_listen(socket_context_t* ctx,int *socket, int port);//che
 // __global__ void socket_recv(socket_context_t* ctx,int* socket,int * data_addr,size_t length);//check
 
 
-__global__  void connect(socket_context_t* ctx,int socket_id,sock_addr_t addr);//check
+__global__  void connect(socket_context_t* ctx,int* socket,sock_addr_t addr);//check
 
-__global__ void accept(socket_context_t* ctx,int socket_id,connection_t* connection);
+__global__ void accept(socket_context_t* ctx,int* socket,connection_t* connection);
 
 unsigned int* map_reg_4(int reg,fpga::XDMAController* controller);//check
 
@@ -51,10 +51,6 @@ __device__ void write_bypass(volatile unsigned int *dev_addr,unsigned int *data)
 __device__ void read_info(socket_context_t* ctx);
 
 __device__ int get_empty_buffer(socket_context_t* ctx);
-
-__device__ int accept_list_enroll(socket_context_t* ctx,int socket_id);
-
-__device__ int get_accept_list_index(socket_context_t* ctx,int port);
 
 __device__ int fetch_head(socket_context_t* ctx,int buffer_id);
 #endif

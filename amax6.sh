@@ -1,7 +1,7 @@
 #!/usr/bin/expect -f
-set user "amax4"
-set ip "192.168.189.10"
-set pass "Rc4ml0624@9$\n"
+set user "amax6"
+set ip "192.168.189.12"
+set pass "Rc4ml0624@13$\n"
 
 spawn ssh "$user@$ip" ; log_user 0;
 expect "]*"
@@ -27,7 +27,7 @@ expect "]*"
 send "make\n"
 expect eof
 expect eof
-send "sudo ./dma-example -t client\n"
+send "sudo ./dma-example -t server\n"
 expect "]*"
 send $pass
 interact

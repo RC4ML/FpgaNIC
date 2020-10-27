@@ -1,8 +1,172 @@
 #include "interface.cuh"
 #include "kernel.cuh"
 #include "network.cuh"
- 
+#include "sys/time.h"
+#include <fstream>
+#include <iostream>
 
+using namespace std;
+ofstream outfile;
+__global__ void GlobalCopy(int *out, const int *in, size_t N )
+{
+    int temp[16];
+	N=size_t(N/4);
+	//avoid accessing cache, assure cold-cache access
+	int start = (blockIdx.x * blockDim.x + threadIdx.x);
+    int step = (blockDim.x * gridDim.x);
+    // int step = 16 ;
+
+    // printf("start:%d\n",step);
+	int i;
+
+    for ( i = start; i < N; i += step*1 ) {
+        for ( int j = 0; j <1; j++ ) {
+            // int index = i;//+j*blockDim.x;;
+            temp[j] += in[i + j*step];
+        }
+    }
+    for(int j=0;j<1;j++){
+        out[j] = temp[j];
+    }
+    
+}
+
+
+
+__global__ void gpu_pressure(volatile unsigned int *data_addr,int iter,size_t block_length,unsigned int *out){
+	int index = blockIdx.x*blockDim.x+threadIdx.x;
+	size_t op_num = size_t(block_length/sizeof(int));
+	int total_threads = blockDim.x*gridDim.x;
+	size_t iter_num = size_t(op_num/total_threads);
+	clock_t s,e;
+
+	for(size_t i=0;i<iter_num;i++){
+		data_addr[total_threads*i+index] = 1;
+	}
+	out[index]=0;
+	BEGIN_SINGLE_THREAD_DO
+		printf("###########gpu move start! total_threads:%d  opnum:%ld  iter_num:%d\n",total_threads,op_num,iter_num);
+		s = clock64();
+	END_SINGLE_THREAD_DO
+
+	
+	for(int it=0;it<iter;it++){
+		for(size_t i=0;i<iter_num;i++){
+			out[index]+=data_addr[total_threads*i+index];
+		}
+	}
+
+	
+	BEGIN_SINGLE_THREAD_DO
+		e = clock64();
+		float time = (e-s)/1.41/1e9;
+		float speed = 1.0*block_length*iter/1024/1024/1024/time;
+		// printf("e-s:%ld  time=%f speed=%f GB/s \n",e-s,time,speed);
+	END_SINGLE_THREAD_DO
+}
+
+void gpu_benchmark(param_test_t param_in,int burst,int ops,int start){
+	sleep(1);
+	fpga::XDMAController* controller = param_in.controller;
+
+	unsigned long tlb_start_addr_value = (unsigned long)param_in.tlb_start_addr;
+	controller->writeReg(32,(unsigned int)tlb_start_addr_value);
+	controller->writeReg(33,(unsigned int)(tlb_start_addr_value>>32));
+
+	unsigned int* recv_tlb_start_addr = param_in.tlb_start_addr+int((100*1024*1024)/sizeof(int));
+	unsigned long recv_tlb_start_addr_value = (unsigned long)recv_tlb_start_addr;
+	controller->writeReg(34,(unsigned int)recv_tlb_start_addr_value);
+	controller->writeReg(35,(unsigned int)(recv_tlb_start_addr_value>>32));
+
+	cout<<"start fpga workload\n";
+	int rd_sum,wr_sum;
+	float rd_speed,wr_speed;
+	int total_length = 100*1024*1024 ;
+
+	controller ->writeReg(36,total_length);
+	controller ->writeReg(37,ops);
+	controller ->writeReg(38,burst);
+	controller ->writeReg(39,0);
+	controller ->writeReg(39,start);
+	sleep(5);
+  	controller ->writeReg(39,0);
+	
+	
+	rd_sum = controller ->readReg(577);
+	wr_sum = controller ->readReg(576);
+	// cout << "wr_sum: " << wr_sum <<endl; 
+  	// cout << "rd_sum: " << rd_sum <<endl;
+	wr_speed = 1.0*burst*ops*250/wr_sum/1000;
+	rd_speed = 1.0*burst*ops*250/rd_sum/1000;
+	cout<<"busrt:"<<burst<<" ops:"<<ops<<" mode:"<<start<<endl;
+	
+	
+	if(start==2){//read
+		cout << " dma_read_cmd_counter0: " <<controller -> readReg(525) <<endl;
+		cout <<  std::dec << "rd_speed: " << rd_speed << " GB/s" << endl;
+		outfile<<rd_speed<<endl;
+	}
+	if(start==1){//write
+		cout << " dma_write_cmd_counter1: " <<controller ->readReg(522) <<endl;
+		cout <<  std::dec << "wr_speed: " << wr_speed << " GB/s" << endl;
+		outfile<<wr_speed<<endl;
+	}
+	if(start==3){
+		cout << " dma_read_cmd_counter0: " <<controller -> readReg(525) <<endl;
+		cout << " dma_write_cmd_counter1: " <<controller ->readReg(522) <<endl;
+		cout <<  std::dec << "wr_speed: " << wr_speed << " GB/s" << endl;
+		cout <<  std::dec << "rd_speed: " << rd_speed << " GB/s" << endl;
+		outfile<<wr_speed<<" "<<rd_speed<<endl;
+	}
+	outfile.close();
+}
+void pressure_test(param_test_t param_in,int burst,int ops,int start){
+	// cudaDeviceProp device_prop;
+	// cudaGetDeviceProperties(&device_prop, 0);
+	// printf("GPU最大时钟频率: %.0f MHz (%0.2f GHz)\n",device_prop.clockRate*1e-3f, device_prop.clockRate*1e-6f);
+	outfile.open("data.txt", ios::out |ios::app );
+	int blocks=128;
+	int threads=512;
+	int total=blocks*threads;
+	unsigned int * out;
+	unsigned int * out_cpu = new unsigned int[total];
+	cudaMalloc(&out,sizeof(unsigned int)*total);
+
+	double elapsedTime;
+	struct timeval t_start, t_end;
+    gettimeofday(&t_start,NULL);
+
+	int iter = 50000;
+	size_t buffer_size = 200*1024*1024;
+	gpu_pressure<<<blocks,threads>>>((unsigned int *)param_in.map_d_ptr,iter,buffer_size,out);
+	// for(int i=0;i<50000;i++){
+	// 	GlobalCopy<<<blocks,threads>>>((int *)out,(int *)param_in.map_d_ptr,200*1024*1024);
+	// }
+	
+	gpu_benchmark(param_in,burst,ops,start);
+	cudaThreadSynchronize();
+	cudaError_t cudaerr = cudaPeekAtLastError();
+    if (cudaerr != cudaSuccess)
+        printf("kernel launch failed with error \"%s\".\n",
+               cudaGetErrorString(cudaerr));
+	gettimeofday(&t_end,NULL);
+	elapsedTime =  t_end.tv_sec - t_start.tv_sec + (t_end.tv_usec - t_start.tv_usec)/1000000.0;
+	cout<<"Time:"<<elapsedTime<<endl;
+	cout<<"speed"<<1.0*iter*buffer_size/elapsedTime/1024/1024/1024 << endl;
+	
+	// cudaMemcpy(out_cpu,out,sizeof(unsigned int)*total,cudaMemcpyDeviceToHost);
+	// for(int i=0;i<16;i++){
+	// 	cout<<out_cpu[i]<<" ";
+	// }
+	// for(int i=0;i<total;i++){
+	// 	if(out_cpu[i]!=out_cpu[0]){
+	// 		cout<<"error at:"<<i<<" value:"<<out_cpu[i]<<endl;
+	// 		break;
+	// 	}
+	// }
+	printf("###########gpu move done!\n");
+	cout<<endl<<endl;
+}
 
 void socket_sample(param_interface_socket_t param_in){
 	socket_context_t* context = get_socket_context(param_in.buffer_addr,param_in.tlb_start_addr,param_in.controller);
@@ -18,16 +182,29 @@ void socket_sample(param_interface_socket_t param_in){
 
 	int* socket1;
 	cudaMalloc(&socket1,sizeof(int));
+
+	connection_t* connection1;
+	cudaMalloc(&connection1,sizeof(connection_t));
+
 	cudaStream_t stream;
 	cudaStreamCreate(&stream);
-
-	create_socket<<<1,1,0,stream>>>(context,socket1);
-	compute<<<1,1024,0,stream>>>(data,length,3);
-	connect<<<1,0,0,stream>>>(context,*socket1,addr);
-	socket_send<<<1,2,0,stream>>>(context,socket1,data,1024);
-	// create_socket<<<1,1,0,stream>>>(context,socket1);
-	// socket_listen<<<1,1,0,stream>>>(context,socket1,1234);
-	// socket_recv<<<1,1,0,stream>>>(context,socket1,data,1024);
+	sleep(3);
+	printf("start user code:\n");
+	//send code
+	if(app_type==0){
+		create_socket<<<1,1,0,stream>>>(context,socket1);
+		compute<<<1,1024,0,stream>>>(data,length,4);
+		connect<<<1,1,0,stream>>>(context,socket1,addr);
+		socket_send<<<1,8,0,stream>>>(context,socket1,data,6*1024*1024);
+	}else if(app_type==1){
+		//recv code
+		create_socket<<<1,1,0,stream>>>(context,socket1);
+		socket_listen<<<1,1,0,stream>>>(context,socket1,1111);
+		accept<<<1,1,0,stream>>>(context,socket1,connection1);
+		socket_recv<<<1,8,0,stream>>>(context,connection1,data,2048);
+	}else{
+		printf("app_type not set!\n");
+	}
 
 }
 

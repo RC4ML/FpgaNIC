@@ -1,5 +1,0 @@
-0x00000000	nvidia_p2p_get_pages	/home/amax4/xdma/gdrcopy/src/gdrdrv/nv-p2p-dummy	EXPORT_SYMBOL	
-0x00000000	nvidia_p2p_init_mapping	/home/amax4/xdma/gdrcopy/src/gdrdrv/nv-p2p-dummy	EXPORT_SYMBOL	
-0x00000000	nvidia_p2p_destroy_mapping	/home/amax4/xdma/gdrcopy/src/gdrdrv/nv-p2p-dummy	EXPORT_SYMBOL	
-0x00000000	nvidia_p2p_put_pages	/home/amax4/xdma/gdrcopy/src/gdrdrv/nv-p2p-dummy	EXPORT_SYMBOL	
-0x00000000	nvidia_p2p_free_page_table	/home/amax4/xdma/gdrcopy/src/gdrdrv/nv-p2p-dummy	EXPORT_SYMBOL	

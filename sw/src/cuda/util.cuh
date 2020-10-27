@@ -17,7 +17,7 @@
 #define TOTAL_BUFFER_LENGTH 100*1024*1024
 
 #define INFO_BUFFER_LENGTH 2*1024*1024
-#define ALMOST_FULL_LENGTH 2*1024*1024
+#define MAX_PACKAGE_LENGTH 2*1024*1024
 
 #define FLOW_CONTROL_RATIO 0.5
 #define MAX_ACCEPT_LIST_LENGTH 64
@@ -59,8 +59,6 @@ typedef	struct sock_addr{
 }sock_addr_t;
 
 typedef struct fpga_registers{
-	volatile unsigned int * read_count;
-
 	volatile unsigned int* con_session_status;
 
 	volatile unsigned int* listen_status;
@@ -69,9 +67,12 @@ typedef struct fpga_registers{
 
 	volatile unsigned int* conn_ip;
 	volatile unsigned int* conn_port;
+	volatile unsigned int* conn_buffer_id;
 	volatile unsigned int* conn_start;
 
 	volatile unsigned int* conn_response;
+	volatile unsigned int* conn_res_start;
+	volatile unsigned int* conn_re_session_id;
 
 
 	//bypass
@@ -83,8 +84,8 @@ typedef struct fpga_registers{
 
 typedef struct connection_node{
 	int session_id;
-	int src_ip;
-	int src_port;
+	int src_ip;//to print, no other use
+	int src_port;//to print, no other use
 	int buffer_id;
 	bool valid;
 }connection_t;
@@ -94,29 +95,17 @@ typedef struct connection_node{
 typedef struct socket_type{
 	int buffer_id;
 	int valid;
-	int port;
-	int is_listening;
 }socket_type_t;
 
 typedef struct buffer_type{
-	int session_id;
 	int valid;
+	int session_id;
 	int socket_id;
 	int type;//0 for socket   1 for connection
-	connection_t* connection;
+	connection_t* connection;//only for type 1
 }buffer_type_t;
 
-typedef struct accept_node{
-	int socket_id;
-	int listening_port;
-	int valid;
-	int done;
-	int src_ip;
-	int src_port;
-	int buffer_id;
-	int session_id;
 
-}accept_node_t;
 typedef struct socket_context{
 	volatile unsigned long send_read_count[MAX_BUFFER_NUM];
 	volatile unsigned long send_write_count[MAX_BUFFER_NUM];
@@ -137,15 +126,18 @@ typedef struct socket_context{
 	volatile unsigned int* info_buffer;//check
 	int socket_num;//check
 	socket_type_t	socket_info[1024];
-	accept_node_t   accept_list[MAX_ACCEPT_LIST_LENGTH];
-	int accept_num;
+
+	int is_listening;
+	int server_port;
+	int server_socket_id;
+	int is_accepting;
+	int accepted;
+	connection_t * connection_builder;
 	connection_t connection_tbl[1024];
 	
 	int mutex;//check
 
 	//registers write
-	volatile unsigned int* read_count;//check
-
 
 	//registers read
 	volatile unsigned int* con_session_status;//check
@@ -156,9 +148,13 @@ typedef struct socket_context{
 
 	volatile unsigned int* conn_ip;
 	volatile unsigned int* conn_port;
+	volatile unsigned int* conn_buffer_id;
 	volatile unsigned int* conn_start;
 
 	volatile unsigned int* conn_response;
+	volatile unsigned int* conn_res_start;
+	volatile unsigned int* conn_re_session_id;
+
 
 
 	//bypass

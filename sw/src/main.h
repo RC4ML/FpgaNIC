@@ -7,6 +7,9 @@
 void set_page_table();
 void copy_to_cpu();
 void close_device();
+
+extern int app_type;
+
 typedef struct param_test{
 	fpga::XDMAController* controller;
 	uint64_t addr;

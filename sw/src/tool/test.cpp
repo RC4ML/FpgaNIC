@@ -8,8 +8,8 @@ void socket_send_test(param_test_t param_in){
 	param_interface_socket_t param_out;
 	param_out.tlb_start_addr = param_in.tlb_start_addr;
 	param_out.mac	=	111;
-	param_out.ip	=	0xabda8c1;
-	param_out.port	=	1234;
+	param_out.ip	=	0xc0a8bd08;
+	param_out.port	=	1235;
 	param_out.buffer_addr = ((unsigned int*)param_in.map_d_ptr);
 	param_out.controller  = param_in.controller;
 	socket_sample(param_out);

@@ -14,6 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include<unistd.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +34,8 @@
 #include "cuda/interface.cuh"
 #include "tool/test.hpp"
 #include "tool/input.hpp"
+#include <fstream>
+#include <iostream>
 extern "C"
 void useCUDA();
 void write(void* addr);
@@ -40,7 +44,7 @@ using namespace gdrcopy::test;
 
 
 #define SHOWINFO 0
-size_t gpu_mem_size = size_t(8)*1024*1024*1024;//bytes  220*1024*1024  size_t(8)*1024*1024*1024
+size_t gpu_mem_size = 220*1024*1024;//bytes  220*1024*1024  size_t(8)*1024*1024*1024
 int dev_id = 0;//gpu device
 CUdevice dev;
 CUcontext dev_ctx;
@@ -50,9 +54,35 @@ gdr_t g;
 gdr_mh_t mh;
 uint32_t *buf_ptr;
 void *map_d_ptr  = NULL;
+int app_type = -1;
 
+void get_opt(int argc, char *argv[]){
+	int o;  // getopt() 的返回值
+    const char *optstring = "t:"; // 设置短参数类型及是否需要参数
+
+     while ((o = getopt(argc, argv, optstring)) != -1) {
+        switch (o) {
+            case 't':
+				if(optarg==string("server")){
+					printf("app_type:server\n");
+					app_type = 1;
+				}else if(optarg==string("client")){
+					printf("app_type:client\n");
+					app_type = 0;
+				}else{
+					printf("Error app_type!\n");
+				}
+                break;
+            case '?':
+                printf("error optopt: %c\n", optopt);
+                printf("error opterr: %d\n", opterr);
+                break;
+        }
+    }
+}
 
 int main(int argc, char *argv[]) {
+	get_opt(argc,argv);
 	set_page_table();
 	if(SHOWINFO){
 		cout<<"m_page_table.page_entries:"<<m_page_table.page_entries<<endl;
@@ -77,9 +107,40 @@ int main(int argc, char *argv[]) {
 	// param.controller->writeReg(161,(unsigned int)(param.addr>>32));
 
 	//stream_transfer(param);
-	socket_send_test(param);
-	sleep(3);
-	start_cmd_control(param.controller);
+	//socket_send_test(param);
+	// sleep(3);
+	// start_cmd_control(param.controller);
+	ofstream outfile;
+	int burst =1024;
+	int ops =50000;
+	for(int i=0;i<11;i++){
+		pressure_test(param,burst,ops,2);
+		burst*=2;
+	}
+	outfile.open("data.txt", ios::out |ios::app );
+	outfile<<endl;
+	outfile.close();
+
+	burst =1024;
+	ops = 50000;
+	for(int i=0;i<11;i++){
+		pressure_test(param,burst,ops,1);
+		burst*=2;
+	}
+	outfile.open("data.txt", ios::out |ios::app );
+	outfile<<endl;
+	outfile.close();
+
+	burst =1024;
+	ops = 50000;
+	for(int i=0;i<11;i++){
+		pressure_test(param,burst,ops,3);
+		burst*=2;
+	}
+	outfile.open("data.txt", ios::out |ios::app );
+	outfile<<endl;
+	outfile.close();
+	
 	// uint64_t r_addr = controller ->getBypassAddr(0);
 	// cout<<"addr:"<<r_addr<<endl;
 	// uint64_t* a = (uint64_t*)r_addr;
