@@ -6,7 +6,7 @@
 __global__ void create_socket(socket_context_t* ctx,int* socket){
 	BEGIN_SINGLE_THREAD_DO
 		*(socket) = atomicAdd(&(ctx->socket_num),1);
-		printf("create socket success with socket_id:%d\n",*(socket));
+		printf("---create socket success with socket_id:%d\n",*(socket));
 	END_SINGLE_THREAD_DO
 }
 __global__ void socket_listen(socket_context_t* ctx,int *socket,int port){
@@ -20,7 +20,7 @@ __global__ void socket_listen(socket_context_t* ctx,int *socket,int port){
 
 		*(ctx->listen_port)		=	port;
 		*(ctx->listen_start)	=	1;
-
+		printf("---try listen,socket:%d\n",socket_id);
 		int res = wait_done(ctx->listen_status,1);
 		*(ctx->listen_start)	=	0;
 
@@ -56,8 +56,8 @@ __global__ void accept(socket_context_t* ctx,int* socket,connection_t* connectio
 			ctx->connection_builder	=	connection;
 			ctx->is_accepting		=	1;
 			while(ctx->accepted==0){
-				cu_sleep(4);
 				printf("accepting!\n");
+				cu_sleep(1);
 			}
 			//todo
 			int buffer_id					= connection->buffer_id;
@@ -66,7 +66,7 @@ __global__ void accept(socket_context_t* ctx,int* socket,connection_t* connectio
 			ctx->buffer_info[buffer_id].type		=	1;
 			ctx->buffer_info[buffer_id].connection	=	connection;
 			ctx->accepted=0;
-			printf("accepted a connection!\n");
+			printf("---accepted a connection!\n");
 			
 		}
 	END_SINGLE_THREAD_DO
@@ -77,12 +77,11 @@ __global__ void connect(socket_context_t* ctx,int *socket,sock_addr_t addr){
 	__shared__ int buffer_id;
 	BEGIN_SINGLE_THREAD_DO
 		socket_id = *socket;
-		printf("try connecting!\n");
 		if(false==check_socket_validation(ctx,socket_id)){
 			printf("socket %d does not exists!\n",socket_id);
 			return;
 		}
-		printf("connecting, dst_ip:%x dst_port:%d\n",addr.ip,addr.port);
+		printf("---connecting, dst_ip:%x dst_port:%d\n",addr.ip,addr.port);
 		if(ctx->buffer_used >= MAX_BUFFER_NUM){
 			printf("buffer runs out, can't connect!\n");
 			return;
@@ -123,7 +122,7 @@ __global__ void connect(socket_context_t* ctx,int *socket,sock_addr_t addr){
 				ctx->send_read_count[buffer_id]		=	0;
 				ctx->send_write_count[buffer_id]	=	0;
 				ctx->recv_read_count[buffer_id]		=	0;
-				printf("socket:%d connect success with session_id:%d\n",socket_id,session_id);
+				printf("---socket:%d connect success with session_id:%d\n",socket_id,session_id);
 				return;
 			}
 		}
@@ -175,6 +174,7 @@ socket_context_t* get_socket_context(unsigned int *dev_buffer,unsigned int *tlb_
 	controller->writeReg(179,INFO_BUFFER_LENGTH);
 	controller->writeReg(180,MAX_PACKAGE_LENGTH);
 	controller->writeReg(181,MAX_BUFFER_NUM);
+	controller->writeReg(182,PACKAGE_LENGTH_512);
 
 	// std::cout << "listen status: " << controller->readReg(641) << std::endl;
 	// printf("read reg send buffer:%x %x\n",controller->readReg(160),controller->readReg(161));
@@ -193,6 +193,9 @@ socket_context_t* get_socket_context(unsigned int *dev_buffer,unsigned int *tlb_
 	registers.conn_re_session_id			=	map_reg_4(138,controller);
 	registers.conn_response					=	map_reg_4(139,controller);
 	registers.conn_res_start				=	map_reg_4(140,controller);
+
+	registers.tcp_conn_close_session		=	map_reg_4(136,controller);
+	registers.tcp_conn_close_start			=	map_reg_4(137,controller);
 	
 
 	registers.send_data_cmd_bypass_reg		=	map_reg_64(3,controller);
@@ -238,7 +241,7 @@ __device__ void move_data_to_send_buffer(socket_context_t* ctx,int buffer_id,int
 	addr_base_offset = int(addr_base_offset/sizeof(int));
 
 	BEGIN_SINGLE_THREAD_DO
-		printf("sending, block_length:%d  total_threads:%d  iter_num:%d  addr_base_offset:%d\n",block_length,total_threads,iter_num,addr_base_offset);
+		//printf("sending, block_length:%x  buffer_id:%d addr_base_offset:%x\n",block_length,buffer_id,addr_base_offset);
 		if(op_num%total_threads!=0){
 			printf("data length does not align!\n");
 			return;
@@ -246,10 +249,31 @@ __device__ void move_data_to_send_buffer(socket_context_t* ctx,int buffer_id,int
 		//ctx->send_buffer_offset[buffer_id]+=block_length; no need to add here, it's added outside
 	END_SINGLE_THREAD_DO
 
-	for(int i=0;i<iter_num;i++){
-		ctx->send_buffer[addr_base_offset+total_threads*i+index]		=	data_addr[total_threads*i+index];
-		//printf("%d\n",ctx->send_buffer[addr_offset+total_threads*i+index]);
+	// for(int i=0;i<iter_num;i++){
+	// 	ctx->send_buffer[addr_base_offset+total_threads*i+index]		=	data_addr[total_threads*i+index];
+	// 	//printf("%d\n",ctx->send_buffer[addr_offset+total_threads*i+index]);
+	// }
+
+	{//ptx
+		for(int i=0;i<iter_num;i++){
+			volatile uint64_t  addr = (uint64_t)((ctx->send_buffer)+addr_base_offset+total_threads*i+index);
+			volatile unsigned int value=(unsigned int)data_addr[total_threads*i+index];
+			asm volatile(
+				"st.u32.wt [%0],%1;\n\t"
+				:"+l"(addr):"r"(value):"memory"
+			);
+		}
 	}
+
+		//st addr
+		for(int i=0;i<iter_num;i++){
+			if((addr_base_offset+total_threads*i+index)%16==0){
+				ctx->send_buffer[addr_base_offset+total_threads*i+index] = ((unsigned long)(ctx->send_buffer+addr_base_offset+total_threads*i+index));
+			}else{
+				ctx->send_buffer[addr_base_offset+total_threads*i+index]=ctx->send_buffer[addr_base_offset+total_threads*i+index];
+			}
+		}
+	__threadfence();
 	
 }
 
@@ -262,13 +286,16 @@ __device__ void move_data_from_recv_buffer(socket_context_t* ctx,int buffer_id,i
 	addr_base_offset = int(addr_base_offset/sizeof(int));
 
 	BEGIN_SINGLE_THREAD_DO
-		printf("recving, block_length:%d  total_threads:%d  iter_num:%d  addr_base_offset:%d\n",block_length,total_threads,iter_num,addr_base_offset);
+		//printf("recving, buffer:%d block_length:%d addr_base_offset_in_int:%d recv_read_count:%ld rdcount_record:%d\n",buffer_id,block_length,addr_base_offset,ctx->recv_read_count[buffer_id],ctx->buffer_read_count_record[buffer_id]);
+		printf("buffer:%d recv_read_count:%ld rdcount_record:%d\n",buffer_id,ctx->recv_read_count[buffer_id],ctx->buffer_read_count_record[buffer_id]);
+
 		if(op_num%total_threads!=0){
 			printf("data length does not align!\n");
 		}
 	END_SINGLE_THREAD_DO
 	for(int i=0;i<iter_num;i++){
 		data_addr[total_threads*i+index]	=	ctx->recv_buffer[addr_base_offset+total_threads*i+index];
+		ctx->recv_buffer[addr_base_offset+total_threads*i+index]	=	0;
 	}
 	
 }
@@ -293,7 +320,7 @@ __device__ void read_info(socket_context_t* ctx){
 		ctx->info_offset+=16;//++512 bit
 		ctx->info_count++;
 		int info_type = ctx->info_buffer[offset+1];
-		printf("read a info, type:%d\n",info_type);
+		printf("---read a info, type:%d\n",info_type);
 		for(int i=0;i<16;i++){
 			printf("%x ",ctx->info_buffer[offset+i]);
 		}
@@ -304,23 +331,25 @@ __device__ void read_info(socket_context_t* ctx){
 			read_count = read_count<<32;
 			read_count+=ctx->info_buffer[offset+6];
 			ctx->send_read_count[buffer_id] = read_count;
-			printf("update read count of buffer:%d with %ld\n",buffer_id,read_count);
+			printf("---update rd count buffer:%d with %lx\n",buffer_id,read_count);
 		}else if(info_type==0){//open todo
 			if(ctx->buffer_used<MAX_BUFFER_NUM){
 				
-				int buffer_id						=	get_empty_buffer(ctx);
-				int session_id 						=	ctx->info_buffer[offset+3];
-				int src_ip 							=	ctx->info_buffer[offset+4];
-				int src_port						=	ctx->info_buffer[offset+5];
-				ctx->connection_builder->session_id	=	session_id;
-				ctx->connection_builder->src_ip 	=	src_ip;
-				ctx->connection_builder->src_port	=	src_port;
-				ctx->connection_builder->buffer_id	=	buffer_id;
-				ctx->connection_builder->valid		=	1;
-				
-				*(ctx->conn_re_session_id)			=	session_id;
-				*(ctx->conn_response)				=	0xf0000000+buffer_id;
-				ctx->accepted						=	1;
+				int buffer_id								=	get_empty_buffer(ctx);
+				int session_id 								=	ctx->info_buffer[offset+3];
+				int src_ip 									=	ctx->info_buffer[offset+4];
+				int src_port								=	ctx->info_buffer[offset+5];
+				ctx->connection_builder->session_id			=	session_id;
+				ctx->connection_builder->src_ip 			=	src_ip;
+				ctx->connection_builder->src_port			=	src_port;
+				ctx->connection_builder->buffer_id			=	buffer_id;
+				ctx->connection_builder->valid				=	1;
+
+				*(ctx->conn_re_session_id)					=	session_id;
+				*(ctx->conn_response)						=	0xf0000000+buffer_id;
+				ctx->accepted								=	1;
+				ctx->buffer_read_count_record[buffer_id]	=	1;//flow control
+				printf("buffer_read_count_record:%d\n",ctx->buffer_read_count_record[buffer_id]);
 				//todo
 				
 
@@ -340,14 +369,25 @@ __device__ void read_info(socket_context_t* ctx){
 
 __device__ int fetch_head(socket_context_t* ctx,int buffer_id){
 	int offset = int(ctx->recv_buffer_offset[buffer_id]/sizeof(int));
-	while(ctx->recv_buffer[offset+0]==0){//todo seq
-		cu_sleep(4);
+	while(ctx->recv_buffer[offset+1]==0){//todo seq
+		cu_sleep(1);
 		printf("waiting data head!\n");
 	}
 	int length = ctx->recv_buffer[offset+1];
-	ctx->recv_read_count[buffer_id]+=64;
+	int tail_offset = int(length/sizeof(int)) - int(64/sizeof(int));
+	while(ctx->recv_buffer[offset+1+tail_offset] != length){
+		cu_sleep(1);
+		printf("waiting data tail!\n");
+		for(int i=0;i<16;i++){
+			printf("%d ",ctx->recv_buffer[offset+i]);
+		}
+		printf("\n");
+	}
+	ctx->recv_buffer[offset+1] = 0;
+	ctx->recv_buffer[offset+1+tail_offset] = 0;
+
 	ctx->recv_buffer_offset[buffer_id]+=64;
-	return length-64;
+	return length-128;
 }
 
 __device__ int get_empty_buffer(socket_context_t* ctx){

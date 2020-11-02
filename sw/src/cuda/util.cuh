@@ -13,11 +13,14 @@
 #define MAX_BLOCK_SIZE 2*1024*1024
 #define MAX_INFO_NUM 1024
 #define MAX_BUFFER_NUM 4
+
+#define PACKAGE_LENGTH_512 256
 #define SINGLE_BUFFER_LENGTH 25*1024*1024
 #define TOTAL_BUFFER_LENGTH 100*1024*1024
 
 #define INFO_BUFFER_LENGTH 2*1024*1024
 #define MAX_PACKAGE_LENGTH 2*1024*1024
+#define OVERHEAD 5*1024*1024
 
 #define FLOW_CONTROL_RATIO 0.5
 #define MAX_ACCEPT_LIST_LENGTH 64
@@ -50,7 +53,7 @@ __device__ void lock(int *mutex);
 
 __device__ void unlock(int *mutex);
 
-__device__ int cu_sleep(int seconds);
+__device__ int cu_sleep(double seconds);
 
 typedef	struct sock_addr{
 		int ip;
@@ -74,6 +77,8 @@ typedef struct fpga_registers{
 	volatile unsigned int* conn_res_start;
 	volatile unsigned int* conn_re_session_id;
 
+	volatile unsigned int* tcp_conn_close_session;
+	volatile unsigned int* tcp_conn_close_start;
 
 	//bypass
 	volatile unsigned int* send_data_cmd_bypass_reg;
@@ -155,6 +160,8 @@ typedef struct socket_context{
 	volatile unsigned int* conn_res_start;
 	volatile unsigned int* conn_re_session_id;
 
+	volatile unsigned int* tcp_conn_close_session;
+	volatile unsigned int* tcp_conn_close_start;
 
 
 	//bypass

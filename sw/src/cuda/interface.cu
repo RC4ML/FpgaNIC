@@ -88,7 +88,7 @@ void gpu_benchmark(param_test_t param_in,int burst,int ops,int start){
 	controller ->writeReg(38,burst);
 	controller ->writeReg(39,0);
 	controller ->writeReg(39,start);
-	sleep(5);
+	sleep(10);
   	controller ->writeReg(39,0);
 	
 	
@@ -125,8 +125,8 @@ void pressure_test(param_test_t param_in,int burst,int ops,int start){
 	// cudaGetDeviceProperties(&device_prop, 0);
 	// printf("GPU最大时钟频率: %.0f MHz (%0.2f GHz)\n",device_prop.clockRate*1e-3f, device_prop.clockRate*1e-6f);
 	outfile.open("data.txt", ios::out |ios::app );
-	int blocks=128;
-	int threads=512;
+	int blocks=2048;
+	int threads=1024;
 	int total=blocks*threads;
 	unsigned int * out;
 	unsigned int * out_cpu = new unsigned int[total];
@@ -172,12 +172,11 @@ void socket_sample(param_interface_socket_t param_in){
 	socket_context_t* context = get_socket_context(param_in.buffer_addr,param_in.tlb_start_addr,param_in.controller);
 
 	int * data;
-	size_t length = 4*256*1024*1024;
-	cudaMalloc(&data,length);
+	size_t total_data_length = 4*256*1024*1024;
+	cudaMalloc(&data,total_data_length);
 
 	sock_addr_t addr;
 	addr.ip = param_in.ip;
-	addr.mac = param_in.mac;
 	addr.port = param_in.port;
 
 	int* socket1;
@@ -189,19 +188,24 @@ void socket_sample(param_interface_socket_t param_in){
 	cudaStream_t stream;
 	cudaStreamCreate(&stream);
 	sleep(3);
-	printf("start user code:\n");
-	//send code
+	printf("---start user code:\n");
+
+	int verify_data_offset = 5;
+	int transfer_data_length = 40*1024*1024;
 	if(app_type==0){
+		//client code
 		create_socket<<<1,1,0,stream>>>(context,socket1);
-		compute<<<1,1024,0,stream>>>(data,length,4);
+		compute<<<1,1024,0,stream>>>(data,total_data_length,verify_data_offset);
 		connect<<<1,1,0,stream>>>(context,socket1,addr);
-		socket_send<<<1,8,0,stream>>>(context,socket1,data,6*1024*1024);
+		socket_send<<<1,8,0,stream>>>(context,socket1,data,transfer_data_length);
 	}else if(app_type==1){
-		//recv code
+		//server code
 		create_socket<<<1,1,0,stream>>>(context,socket1);
-		socket_listen<<<1,1,0,stream>>>(context,socket1,1111);
+		socket_listen<<<1,1,0,stream>>>(context,socket1,1235);
 		accept<<<1,1,0,stream>>>(context,socket1,connection1);
-		socket_recv<<<1,8,0,stream>>>(context,connection1,data,2048);
+		socket_recv<<<1,8,0,stream>>>(context,connection1,data,transfer_data_length);
+		verify<<<1,1,0,stream>>>(data,transfer_data_length,verify_data_offset);
+		//socket_close<<<1,1,0,stream>>>(context,connection1);
 	}else{
 		printf("app_type not set!\n");
 	}

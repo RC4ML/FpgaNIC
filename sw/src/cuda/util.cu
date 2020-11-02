@@ -6,8 +6,8 @@ __device__ int is_zero(volatile unsigned int* reg,int bit){
 }
 
 __device__ int wait_done(volatile unsigned int* reg,int bit){
-	printf("wait done bit:%d\n",bit);
-	size_t time_out = 50000000000;
+	//printf("wait done bit:%d\n",bit);
+	size_t time_out = 100000000000;
 	size_t s;
 	s = clock64();
 	while(is_zero(reg,bit)){
@@ -27,9 +27,9 @@ __device__ void unlock(int *mutex){
 	atomicExch(mutex, 0);
 }
 
-__device__ int cu_sleep(int seconds){
+__device__ int cu_sleep(double seconds){
 	size_t s = clock64();
-	while( clock64()-s<size_t(1000000000)*seconds){
+	while( clock64()-s<size_t(3000000000.0*seconds)){//1s = 3000000000
 	};
 	return int(s);
 }

@@ -26,6 +26,7 @@
  */
 
 #include "XDMA.h"
+#include "main.h"
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 #include "../../../driver/xdma_ioctl.h"
@@ -82,12 +83,13 @@ void XDMA::initializeMemory() {
       controller = new XDMAController(fd, byfd);
    }
 
-   printf("huge_base: %p\n", huge_base);
+   //printf("huge_base: %p\n", huge_base);
    //ioctl to get mapping
    struct xdma_huge huge;
    huge.addr = (unsigned long) huge_base;
    huge.size = (unsigned long) fpga::Configuration::DMA_SIZE;
-   printf("IOCTL_XDMA_BUFFER_Set\n"); fflush(stdout);
+   //printf("IOCTL_XDMA_BUFFER_Set\n"); 
+   fflush(stdout);
 
    if (ioctl(fd, IOCTL_XDMA_BUFFER_SET, &huge) == -1) {
       printf("IOCTL SET failed.\n");
@@ -98,7 +100,8 @@ void XDMA::initializeMemory() {
    struct xdma_huge_mapping map;
    map.npages = huge.size / (2 * 1024 * 1024);
    map.dma_addr = (unsigned long*) calloc(map.npages, sizeof(unsigned long*));
-   printf("IOCTL_XDMA_MAPPING_GET\n"); fflush(stdout);
+   //printf("IOCTL_XDMA_MAPPING_GET\n"); 
+   fflush(stdout);
 
    if (ioctl(fd, IOCTL_XDMA_MAPPING_GET, &map) == -1) {
       printf("IOCTL GET failed.\n");
@@ -108,7 +111,9 @@ void XDMA::initializeMemory() {
    //Insert TLB entries
    printf("npages: %lu, write TLB\n", map.npages); fflush(stdout);
 
-   unsigned long vaddr = (unsigned long) huge_base;
+   //unsigned long vaddr = (unsigned long) huge_base;
+   unsigned long vaddr = (unsigned long) d_A;
+   printf("vaddr start:%lx",vaddr);
 //    for (int i = 0; i < map.npages; i++) { 
 //       //controller->writeTlb(vaddr, map.dma_addr[i], (i == 0));
 // 	  controller->writeTlb(vaddr, 0x000039ffe0560000, (i == 0));

@@ -1,21 +1,50 @@
 #include "kernel.cuh"
 #include "util.cuh"
-
+ __global__ void verify(int * data,size_t length,int offset){
+	 int count=0;
+	 int count_1024=0;
+	 int flag=1;
+	 BEGIN_SINGLE_THREAD_DO
+		size_t op_num = size_t(length/sizeof(int));
+		for(int i=0;i<op_num;i++){
+			if((i%16!=0)&&data[i]!=i+offset){
+				if(data[i]-i-offset == 1024){
+					count_1024+=1;
+				}
+				if(flag==1){
+					printf("verify data failed! index:%d data:%d which should be %d last one is %x\n",i,data[i],i+offset,data[i-1]);
+					flag=0;
+				}
+				count+=1;
+			}
+		}
+		printf("wrong num:%d  count1024:%d\n",count,count_1024);
+		if(flag==1){
+			printf("verify data success!\n");
+		}
+		
+	 END_SINGLE_THREAD_DO
+ }
 
 __global__ void compute(int * data,size_t length,int offset){
 	int index = blockIdx.x*blockDim.x+threadIdx.x;	
 	int total_threads = gridDim.x*blockDim.x;
-	BEGIN_SINGLE_THREAD_DO
-		printf("total_threads:%d\n",total_threads);
-	END_SINGLE_THREAD_DO
+	// BEGIN_SINGLE_THREAD_DO
+	// 	printf("total_threads:%d\n",total_threads);
+	// END_SINGLE_THREAD_DO
 	size_t op_num = size_t(length/sizeof(int));
 	int iter_num = int(op_num/total_threads);
 
 	for(int i=0;i<iter_num;i++){
 		data[i*total_threads+index]	=	i*total_threads+index+offset;
 	}
+	
 	BEGIN_SINGLE_THREAD_DO
-		printf("function compute done!\n");
+		// for(int i=0;i<16;i++){
+		// 	printf("%d ",data[i]);
+		// }
+		// printf("\n");
+		printf("---function compute done!\n");
 		// for(int i=0;i<64;i++){
 		// 	printf("%d  ",data[i]);
 		// }

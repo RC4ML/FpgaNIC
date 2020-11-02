@@ -15,20 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include<unistd.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include<string>
-#include <fstream>
-#include <iomanip>
-#include <bitset>
-#include <cuda.h>
-#include <iostream>
-#include <memory.h>
-#include <gdrapi.h>
+
 #include "main.h"
 #include "common.hpp"
 #include "cuda/interface.cuh"
@@ -87,6 +74,7 @@ int main(int argc, char *argv[]) {
 	if(SHOWINFO){
 		cout<<"m_page_table.page_entries:"<<m_page_table.page_entries<<endl;
 	}
+	cout<<"first entry:"<<hex<<m_page_table.pages[0]<<endl;
 	for(unsigned int i=0;i<m_page_table.page_entries-1;i++){
 		size_t t = m_page_table.pages[i+1]-m_page_table.pages[i];
 		if(t!=65536){
@@ -95,51 +83,52 @@ int main(int argc, char *argv[]) {
 	}
 	param_test_t param;
 	param.controller = fpga::XDMA::getController();
-	uint64_t* dmaBuffer =  (uint64_t*) fpga::XDMA::allocate(1024);//1024*1024*480
-	param.addr = (uint64_t)dmaBuffer;
-	param.cpu_buf = init_buf;
+	//uint64_t* dmaBuffer =  (uint64_t*) fpga::XDMA::allocate(1024);//1024*1024*480
+	//param.addr = (uint64_t)dmaBuffer;
+	//param.cpu_buf = init_buf;
 	param.map_d_ptr = (void *)d_A;
-	param.mem_size = gpu_mem_size;
-	param.tlb_start_addr = (unsigned int *)dmaBuffer;
+	//param.mem_size = gpu_mem_size;
+	param.tlb_start_addr = (unsigned int *)d_A;
 
-
-	// param.controller->writeReg(160,(unsigned int)param.addr);
-	// param.controller->writeReg(161,(unsigned int)(param.addr>>32));
 
 	//stream_transfer(param);
-	//socket_send_test(param);
-	// sleep(3);
-	// start_cmd_control(param.controller);
-	ofstream outfile;
-	int burst =1024;
-	int ops =50000;
-	for(int i=0;i<11;i++){
-		pressure_test(param,burst,ops,2);
-		burst*=2;
-	}
-	outfile.open("data.txt", ios::out |ios::app );
-	outfile<<endl;
-	outfile.close();
+	socket_send_test(param);
+	sleep(3);
+	start_cmd_control(param.controller);
 
-	burst =1024;
-	ops = 50000;
-	for(int i=0;i<11;i++){
-		pressure_test(param,burst,ops,1);
-		burst*=2;
-	}
-	outfile.open("data.txt", ios::out |ios::app );
-	outfile<<endl;
-	outfile.close();
+	{
+	//pressure test code
+	// ofstream outfile;
+	// int burst =1024;
+	// int ops =50000;
+	// for(int i=0;i<11;i++){
+	// 	pressure_test(param,burst,ops,2);
+	// 	burst*=2;
+	// }
+	// outfile.open("data.txt", ios::out |ios::app );
+	// outfile<<endl;
+	// outfile.close();
 
-	burst =1024;
-	ops = 50000;
-	for(int i=0;i<11;i++){
-		pressure_test(param,burst,ops,3);
-		burst*=2;
+	// burst =1024;
+	// ops = 50000;
+	// for(int i=0;i<11;i++){
+	// 	pressure_test(param,burst,ops,1);
+	// 	burst*=2;
+	// }
+	// outfile.open("data.txt", ios::out |ios::app );
+	// outfile<<endl;
+	// outfile.close();
+
+	// burst =64*1024*1024;
+	// ops = 100;
+	// for(int i=0;i<11;i++){
+	// 	pressure_test(param,burst,ops,3);
+	// 	burst*=2;
+	// }
+	// outfile.open("data.txt", ios::out |ios::app );
+	// outfile<<endl;
+	// outfile.close();
 	}
-	outfile.open("data.txt", ios::out |ios::app );
-	outfile<<endl;
-	outfile.close();
 	
 	// uint64_t r_addr = controller ->getBypassAddr(0);
 	// cout<<"addr:"<<r_addr<<endl;

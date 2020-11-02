@@ -3,12 +3,27 @@
 
 #include "fpga/XDMA.h"
 #include "fpga/XDMAController.h"
+#include<unistd.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include<string>
+#include <fstream>
+#include <iomanip>
+#include <bitset>
+#include <cuda.h>
+#include <iostream>
+#include <memory.h>
+#include <gdrapi.h>
 
 void set_page_table();
 void copy_to_cpu();
 void close_device();
 
 extern int app_type;
+extern CUdeviceptr d_A;
 
 typedef struct param_test{
 	fpga::XDMAController* controller;
