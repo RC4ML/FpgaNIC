@@ -170,6 +170,9 @@ void socket_sample(param_interface_socket_t param_in){
 	size_t total_data_length = 2*256*1024*1024;
 	cudaMalloc(&data,total_data_length);
 
+	size_t * swap_data;
+	cudaMallocManaged(&swap_data,300*sizeof(size_t));
+
 	sock_addr_t addr;
 	addr.ip = param_in.ip;
 	addr.port = param_in.port;
@@ -192,7 +195,7 @@ void socket_sample(param_interface_socket_t param_in){
 	cjprint("start user code:\n");
 
 	int verify_data_offset = 5;
-	int transfer_data_length = 4*1024*1024;
+	int transfer_data_length = 2*1024*1024;
 	param_in.controller->writeReg(165,(unsigned int)(transfer_data_length/64));//count code
 	param_in.controller->writeReg(183,(unsigned int)(transfer_data_length/64));
 	if(app_type==0){
@@ -210,9 +213,15 @@ void socket_sample(param_interface_socket_t param_in){
 		create_socket<<<1,1,0,stream>>>(context,socket1);
 		socket_listen<<<1,1,0,stream>>>(context,socket1,1235);
 		accept<<<1,1,0,stream>>>(context,socket1,connection1);
-		cudaError_t cudaerr = cudaPeekAtLastError();
-		socket_recv<<<1,1024,0,stream>>>(context,connection1,data,transfer_data_length);
+		socket_recv<<<1,1024,0,stream>>>(context,connection1,data,transfer_data_length,swap_data);
 		verify<<<1,1,0,stream>>>(data,transfer_data_length,verify_data_offset);
+
+		// cudaError_t cudaerr = cudaDeviceSynchronize();
+		// ErrCheck(cudaerr);
+		// sleep(10);
+		// for(int i=0;i<16;i++){
+		// 	printf("%ld %ld %ld\n",swap_data[i],swap_data[i+50],swap_data[i+100]);
+		// }
 		//socket_close<<<1,1,0,stream>>>(context,connection1);
 		// accept<<<1,1,0,stream>>>(context,socket1,connection2);
 		// socket_recv<<<1,8,0,stream>>>(context,connection2,data,transfer_data_length);

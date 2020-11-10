@@ -243,17 +243,17 @@ __device__ void move_data_to_send_buffer(socket_context_t* ctx,int buffer_id,int
 	int addr_base_offset = SINGLE_BUFFER_LENGTH*buffer_id+ctx->send_buffer_offset[buffer_id];//base offset in bytes
 	addr_base_offset = int(addr_base_offset/sizeof(int));
 
-	BEGIN_SINGLE_THREAD_DO
-		// cjdebug("sending, block_length:%x  buffer_id:%d addr_base_offset:%x\n",block_length,buffer_id,addr_base_offset);
-		// if(op_num%total_threads!=0){
-		// 	cjerror("data length does not align!\n");
-		// 	return;
-		// }
-	END_SINGLE_THREAD_DO
+	// BEGIN_SINGLE_THREAD_DO
+	// 	cjdebug("sending, block_length:%x  buffer_id:%d addr_base_offset:%x\n",block_length,buffer_id,addr_base_offset);
+	// 	if(op_num%total_threads!=0){
+	// 		cjerror("data length does not align!\n");
+	// 		return;
+	// 	}
+	// END_SINGLE_THREAD_DO
 	{//move code
-		// for(int i=0;i<iter_num;i++){
-		// 	ctx->send_buffer[addr_base_offset+total_threads*i+index]		=	data_addr[total_threads*i+index];
-		// }
+		for(int i=0;i<iter_num;i++){
+			ctx->send_buffer[addr_base_offset+total_threads*i+index]		=	data_addr[total_threads*i+index];
+		}
 	}
 	
 
@@ -290,7 +290,6 @@ __device__ void move_data_from_recv_buffer(socket_context_t* ctx,int buffer_id,i
 	addr_base_offset = int(addr_base_offset/sizeof(int));
 
 	BEGIN_SINGLE_THREAD_DO
-		ctx->recv_package_count[buffer_id]+=1;
 		//ptmark
 		// cjdebug("buffer:%d recv_read_count:%ld rdcount_record:%d\n",buffer_id,ctx->recv_read_count[buffer_id],ctx->buffer_read_count_record[buffer_id]);
 		// if(op_num%total_threads!=0){

@@ -3,6 +3,7 @@
 #include "cuda/interface.cuh"
 #include "fpga/XDMA.h"
 #include "fpga/XDMAController.h"
+#include "main.h"
 using namespace std;
 
 
@@ -10,7 +11,8 @@ using namespace std;
 void socket_send_test(param_test_t param_in){
 	param_interface_socket_t param_out;
 	param_out.tlb_start_addr = param_in.tlb_start_addr;
-	param_out.ip	=	0xc0a8bd0c;
+
+	param_out.ip	=	0xc0a8bd0a;
 	param_out.port	=	1235;
 	param_out.buffer_addr = ((unsigned int*)param_in.map_d_ptr);
 	param_out.controller  = param_in.controller;
