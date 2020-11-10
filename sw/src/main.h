@@ -18,6 +18,10 @@
 #include <memory.h>
 #include <gdrapi.h>
 
+#define GPU_TLB
+// #define CPU_TLB
+
+
 void set_page_table();
 void copy_to_cpu();
 void close_device();
@@ -27,9 +31,10 @@ extern CUdeviceptr d_A;
 
 typedef struct param_test{
 	fpga::XDMAController* controller;
-	uint64_t addr;
+	uint64_t addr;//useless now
 	uint32_t *cpu_buf;
 	void *map_d_ptr;
+	void *d_mem_cpu;
 	uint32_t mem_size;
 	unsigned int* tlb_start_addr;
 }param_test_t;
@@ -61,4 +66,6 @@ typedef struct param_interface_socket{
 	unsigned int* tlb_start_addr;
 	fpga::XDMAController* controller;
 }param_interface_socket_t;
+
+
 #endif

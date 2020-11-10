@@ -44,8 +44,10 @@ CUDA_ADD_EXECUTABLE(dma-example
 	cuda/network.cu
 	cuda/util.cu
 	cuda/network_kernel.cu
+	cuda/test.cu
 	tool/test.cpp
 	tool/input.cpp
+	tool/log.cpp
     )
 target_link_libraries(dma-example
 	${Boost_LIBRARIES}

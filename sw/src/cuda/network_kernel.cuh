@@ -26,6 +26,8 @@ __device__ void _socket_send(socket_context_t* ctx,int buffer_id,int * data_addr
 __device__ void _socket_recv(socket_context_t* ctx,int buffer_id,int * data_addr,size_t length);
 
 
+__global__ void socket_close(socket_context_t* ctx,int* socket);
+
 __global__ void socket_close(socket_context_t* ctx,connection_t* connection);
 
 __device__ void _socket_close(socket_context_t* ctx,int session_id);

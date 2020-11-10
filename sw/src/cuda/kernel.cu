@@ -1,26 +1,33 @@
 #include "kernel.cuh"
 #include "util.cuh"
+#include "tool/log.hpp"
  __global__ void verify(int * data,size_t length,int offset){
 	 int count=0;
 	 int count_1024=0;
 	 int flag=1;
+	 int wrong_index;
+	 int wrong_value;
+	 int right_value;
 	 BEGIN_SINGLE_THREAD_DO
 		size_t op_num = size_t(length/sizeof(int));
+		printf("start verify %ld\n",op_num);
 		for(int i=0;i<op_num;i++){
-			if((i%16!=0)&&data[i]!=i+offset){
-				if(data[i]-i-offset == 1024){
-					count_1024+=1;
-				}
+			if(data[i]!=i+offset){
 				if(flag==1){
-					printf("verify data failed! index:%d data:%d which should be %d last one is %x\n",i,data[i],i+offset,data[i-1]);
+					wrong_index=i;
+					wrong_value=data[i];
+					right_value=i+offset;
 					flag=0;
 				}
 				count+=1;
 			}
 		}
-		printf("wrong num:%d  count1024:%d\n",count,count_1024);
 		if(flag==1){
 			printf("verify data success!\n");
+		}else{
+			printf("verify data failed!\n");
+			printf("index:%d data:%d which should be %d\n",wrong_index,wrong_value,right_value);			
+			printf("wrong num:%d  \n",count);
 		}
 		
 	 END_SINGLE_THREAD_DO
@@ -29,9 +36,6 @@
 __global__ void compute(int * data,size_t length,int offset){
 	int index = blockIdx.x*blockDim.x+threadIdx.x;	
 	int total_threads = gridDim.x*blockDim.x;
-	// BEGIN_SINGLE_THREAD_DO
-	// 	printf("total_threads:%d\n",total_threads);
-	// END_SINGLE_THREAD_DO
 	size_t op_num = size_t(length/sizeof(int));
 	int iter_num = int(op_num/total_threads);
 
@@ -40,20 +44,11 @@ __global__ void compute(int * data,size_t length,int offset){
 	}
 	
 	BEGIN_SINGLE_THREAD_DO
-		// for(int i=0;i<16;i++){
-		// 	printf("%d ",data[i]);
-		// }
-		// printf("\n");
-		printf("---function compute done!\n");
-		// for(int i=0;i<64;i++){
-		// 	printf("%d  ",data[i]);
-		// }
-		// printf("\n");
+		cjdebug("function compute done!\n");
 	END_SINGLE_THREAD_DO
 }
 
 __global__ void movThread(param_cuda_thread_t param){
-	//printf("readCount:%d 	writeCount:%d\n",devReadCountAddr[0],devWriteCountAddr[0]);
 	int rCount;
 	int moveCount=0;
 	unsigned int* dataAddr = param.devVAddr0 + int(2*1024*1024/4);

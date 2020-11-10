@@ -7,7 +7,7 @@
 #include <fstream>
 #include <iomanip>
 #include <immintrin.h>
-//#define PRINT_DEBUG
+#include "tool/log.hpp"
 
 using namespace std::chrono_literals;
 using namespace std;
@@ -45,9 +45,6 @@ XDMAController::~XDMAController()
 void XDMAController::writeTlb(unsigned long vaddr, unsigned long paddr, bool isBase)
 { 
    std::lock_guard<std::mutex> guard(ctrl_mutex);
-#ifdef PRINT_DEBUG
-   printf("Writing tlb mapping\n");fflush(stdout);
-#endif
    writeReg(8, (uint32_t) vaddr);
    writeReg(9, (uint32_t) (vaddr >> 32));
    writeReg(10, (uint32_t) paddr);
@@ -79,10 +76,6 @@ void XDMAController::writeTlb(unsigned long vaddr, unsigned long paddr, bool isB
    writeReg(30, (uint32_t) isBase);
    writeReg(31, (uint32_t) 0);
    writeReg(31, (uint32_t) 1);
-
-#ifdef PRINT_DEBUG
-   printf("done\n");fflush(stdout);
-#endif
 }
 
 

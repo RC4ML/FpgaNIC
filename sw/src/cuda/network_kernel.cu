@@ -1,4 +1,5 @@
 #include "network_kernel.cuh"
+#include "tool/log.hpp"
 
 __device__ void _socket_close(socket_context_t* ctx,int session_id){
 	BEGIN_SINGLE_THREAD_DO
@@ -8,11 +9,22 @@ __device__ void _socket_close(socket_context_t* ctx,int session_id){
 	END_SINGLE_THREAD_DO
 }
 
+__global__ void socket_close(socket_context_t* ctx,int* socket){
+	int session_id,buffer_id,socket_id;
+	BEGIN_SINGLE_THREAD_DO
+		socket_id = *socket;
+		buffer_id = ctx->socket_info[socket_id].buffer_id;
+		session_id = ctx->buffer_info[buffer_id].session_id;
+		cjprint("close session_id:%d\n",session_id);
+	END_SINGLE_THREAD_DO
+	_socket_close(ctx,session_id);
+}
+
 __global__ void socket_close(socket_context_t* ctx,connection_t* connection){
 	int session_id;
 	BEGIN_SINGLE_THREAD_DO
 		session_id = connection->session_id;
-		printf("close session_id:%d\n",session_id);
+		cjprint("close session_id:%d\n",session_id);
 	END_SINGLE_THREAD_DO
 	_socket_close(ctx,session_id);
 }
@@ -27,16 +39,12 @@ __device__ void _socket_send(socket_context_t* ctx,int buffer_id,int * data_addr
 		BEGIN_SINGLE_THREAD_DO
 			block_length = min((unsigned long)MAX_BLOCK_SIZE,length-i);
 			while(ctx->send_write_count[buffer_id] > ctx->send_read_count[buffer_id]+(SINGLE_BUFFER_LENGTH-MAX_PACKAGE_LENGTH-OVERHEAD)){
-				cu_sleep(1);
-				printf("wait flow ctrl\n");
+				#if SLOW_DEBUG
+					cu_sleep(1);
+					cjdebug("wait flow ctrl\n");
+				#endif
 			}//stuck if space not enough
-			{
-				printf("before wr:");
-				for(int i =0;i<16;i++){
-					printf("%d ",ctx->send_buffer[i]);
-				}
-				printf("\n");
-			}
+
 		END_SINGLE_THREAD_DO
 		// parallel move data code
 		move_data_to_send_buffer(ctx,buffer_id,block_length,data_addr);
@@ -45,25 +53,7 @@ __device__ void _socket_send(socket_context_t* ctx,int buffer_id,int * data_addr
 		//inform code
 		__shared__ unsigned int data[16];
 		BEGIN_SINGLE_THREAD_DO
-			printf("move a block data done! offset:%x buffer:%d \n",ctx->send_buffer_offset[buffer_id],buffer_id);
-			{//ptx test
-				printf("ptx:");
-				for(int i=0;i<16;i++){
-					volatile uint64_t  addr = (uint64_t)((ctx->send_buffer)+i);
-					volatile unsigned int y=0;
-					asm volatile(
-						"ld.u32.cv %0,[%1];\n\t"//没有就是7 有的话16   ca=16  cg=16   cs=16 lu=16  cv=16
-						:"=r"(y):"l"(addr):"memory"
-					);
-					printf("%u ",y);
-				}
-			}
-			printf("\n");
-			printf("normal:");
-			for(int i =0;i<16;i++){
-				printf("%x ",ctx->send_buffer[i]);
-			}
-			printf("\n");
+			cjdebug("move a block data done! offset:%x buffer:%d \n",ctx->send_buffer_offset[buffer_id],buffer_id);//cjmark
 			data[0] = block_length;//todo seq done
 			data[1] = ctx->send_buffer_offset[buffer_id];
 			data[2] = session_id;
@@ -83,20 +73,20 @@ __global__ void socket_send(socket_context_t* ctx,int* socket,int * data_addr,si
 	__shared__ int buffer_id;
 	//verify socket
 	BEGIN_SINGLE_THREAD_DO
-		// printf("function socket_send called!\n");
+		cjinfo("function socket_send called!\n");
 		int socket_id = *socket;
 		if(false==check_socket_validation(ctx,socket_id)){
-			printf("socket %d does not exists!\n",socket_id);
+			cjerror("socket %d does not exists!\n",socket_id);
 			return;
 		}
 		
 		if(ctx->socket_info[socket_id].valid == 0 ){
-			printf("socket %d does not have connections!\n",socket_id);
+			cjerror("socket %d does not have connections!\n",socket_id);
 			return;
 		}
 
 		buffer_id = ctx->socket_info[socket_id].buffer_id;
-		// printf("send data,socket:%d  buffer_id:%d data_addr:%lx length:%ld\n",(*socket),buffer_id,data_addr,length);
+		cjdebug("send data,socket:%d  buffer_id:%d data_addr:%lx length:%ld\n",(*socket),buffer_id,data_addr,length);
 	END_SINGLE_THREAD_DO
 	_socket_send(ctx,buffer_id,data_addr,length);
 }
@@ -106,9 +96,9 @@ __global__ void socket_send(socket_context_t* ctx,connection_t* connection,int *
 	__shared__ int buffer_id;
 	//verify connection
 	BEGIN_SINGLE_THREAD_DO
-		// printf("function socket_send connection type called!\n");
+		cjdebug("function socket_send connection type called!\n");
 		if(connection->valid==0){
-			printf("connection is not valid!\n");
+			cjerror("connection is not valid!\n");
 			return;
 		}
 		buffer_id = connection->buffer_id;
@@ -122,7 +112,10 @@ __device__ void _socket_recv(socket_context_t* ctx,int buffer_id,int * data_addr
 	__shared__ size_t cur_length;
 	__shared__ size_t flow_control_flag;
 	__shared__ unsigned int data[16];
+	clock_t s,e;
+	int clock_flag;
 	BEGIN_SINGLE_THREAD_DO
+		clock_flag=1;
 		cur_length=0;
 		flow_control_flag=0;
 		session_id = ctx->buffer_info[buffer_id].session_id;
@@ -131,6 +124,10 @@ __device__ void _socket_recv(socket_context_t* ctx,int buffer_id,int * data_addr
 	while(1){
 		BEGIN_SINGLE_THREAD_DO
 			block_length = fetch_head(ctx,buffer_id);
+			if(clock_flag==1){
+				clock_flag=0;
+				s=clock64();
+			}
 		END_SINGLE_THREAD_DO
 		move_data_from_recv_buffer(ctx,buffer_id,block_length,data_addr);
 		data_addr+=int(block_length/sizeof(int));
@@ -146,7 +143,8 @@ __device__ void _socket_recv(socket_context_t* ctx,int buffer_id,int * data_addr
 			if(ctx->recv_read_count[buffer_id]>threshold){//flow control
 				ctx->buffer_read_count_record[buffer_id] = ctx->buffer_read_count_record[buffer_id]+1;
 				flow_control_flag=1;
-				printf("---send flow ctl buffer:%d %lx\n",buffer_id,ctx->recv_read_count[buffer_id]);
+				//ptmark
+				//cjdebug("send flow ctl buffer:%d %lx\n",buffer_id,ctx->recv_read_count[buffer_id]);//cjmark
 				data[0] = (ctx->recv_read_count[buffer_id]);//todo seq
 				data[1] = (ctx->recv_read_count[buffer_id])>>32;
 				data[2] = session_id;
@@ -156,35 +154,38 @@ __device__ void _socket_recv(socket_context_t* ctx,int buffer_id,int * data_addr
 			write_bypass(ctx->recv_read_count_bypass_reg,data);
 			flow_control_flag=0;
 		}
-		if(cur_length==length){
-			BEGIN_SINGLE_THREAD_DO
-				printf("recv done!\n");
-			END_SINGLE_THREAD_DO
+		if(cur_length>=length){
 			break;
-		}else if(cur_length>length){
-			BEGIN_SINGLE_THREAD_DO
-				printf("recv done,but data is a little bit more!\n");
-			END_SINGLE_THREAD_DO
-			break;
-		};
+		}
 	}
+	BEGIN_SINGLE_THREAD_DO
+		e = clock64();
+		float time = (e-s)/1.77/1e9;
+		if(cur_length==length){
+			cjprint("recv done!\n");
+		}else if(cur_length>length){
+			cjerror("recv done,but data is a little bit more!\n");
+			
+		};
+		cjprint("time=%f speed=%f\n",time,length/time/1024/1024/1024);
+	END_SINGLE_THREAD_DO
 }
 __global__ void socket_recv(socket_context_t* ctx,int* socket,int * data_addr,size_t length){
 	__shared__ int socket_id;
 	__shared__ int buffer_id;
 	BEGIN_SINGLE_THREAD_DO
-		// printf("enter recv function!\n");
+		cjdebug("enter recv function!\n");
 		if(false==check_socket_validation(ctx,*socket)){
-			printf("socket %d does not exists!\n",*socket);
+			cjerror("socket %d does not exists!\n",*socket);
 			return;
 		}
 		socket_id = *socket;
 		if(ctx->socket_info[socket_id].valid == 0 ){
-			printf("socket %d does not have connections!\n",socket_id);
+			cjerror("socket %d does not have connections!\n",socket_id);
 			return;
 		}
 		buffer_id = ctx->socket_info[socket_id].buffer_id;
-		printf("recv data with socket:%d  buffer_id:%d	data_addr:%lx	length:%ld\n",socket_id,buffer_id,data_addr,length);
+		cjdebug("recv data with socket:%d  buffer_id:%d	data_addr:%lx	length:%ld\n",socket_id,buffer_id,data_addr,length);
 	END_SINGLE_THREAD_DO
 	_socket_recv(ctx,buffer_id,data_addr,length);
 }
@@ -193,9 +194,9 @@ __global__ void socket_recv(socket_context_t* ctx,connection_t* connection,int *
 	__shared__ int buffer_id;
 	//verify connection
 	BEGIN_SINGLE_THREAD_DO
-		// printf("enter recv function!\n");
+		cjinfo("enter recv function!\n");
 		if(connection->valid==0){
-			printf("connection is not valid!\n");
+			cjerror("connection is not valid!\n");
 			return;
 		}
 		buffer_id = connection->buffer_id;
@@ -206,7 +207,7 @@ __global__ void socket_recv(socket_context_t* ctx,connection_t* connection,int *
 __global__ void send_kernel(socket_context_t* ctx,unsigned int *dev_buffer,fpga_registers_t registers){
 
 	BEGIN_SINGLE_THREAD_DO
-		// printf("send kernel start!\n");
+		cjinfo("send kernel start!\n");
 		ctx->info_buffer				=	dev_buffer+int(100*1024*1024/sizeof(int));
 		ctx->send_buffer				=	dev_buffer;
 		ctx->socket_num					=	0;
@@ -235,13 +236,14 @@ __global__ void send_kernel(socket_context_t* ctx,unsigned int *dev_buffer,fpga_
 		ctx->recv_read_count_bypass_reg	=	registers.recv_read_count_bypass_reg;
 		ctx->recv_buffer				=	dev_buffer+int(102*1024*1024/sizeof(int));
 		
-		//printf("read_count:%d\n",*(ctx->read_count));
 	END_SINGLE_THREAD_DO
 		while(1){
 			BEGIN_SINGLE_THREAD_DO
 				read_info(ctx);
-				cu_sleep(1);
-				printf("kernel pooling\n");
+				#if SLOW_DEBUG
+					cu_sleep(1);
+					cjdebug("kernel pooling\n");
+				#endif
 			END_SINGLE_THREAD_DO
 		}
 	

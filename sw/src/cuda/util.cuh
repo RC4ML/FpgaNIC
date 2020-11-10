@@ -14,7 +14,9 @@
 #define MAX_INFO_NUM 1024
 #define MAX_BUFFER_NUM 4
 
-#define PACKAGE_LENGTH_512 256
+#define PACKAGE_LENGTH_512 512
+//64 bytes 256=16K
+
 #define SINGLE_BUFFER_LENGTH 25*1024*1024
 #define TOTAL_BUFFER_LENGTH 100*1024*1024
 
@@ -23,7 +25,6 @@
 #define OVERHEAD 5*1024*1024
 
 #define FLOW_CONTROL_RATIO 0.5
-#define MAX_ACCEPT_LIST_LENGTH 64
 #define ETH_NAME    "eno1"
 
 #define FIRST_THREAD_IN_BLOCK() ((threadIdx.x + threadIdx.y + threadIdx.z) == 0)
@@ -44,6 +45,10 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
    }
 }
 unsigned int get_ip();
+
+double get_fre();
+
+void test_timer();
 
 __device__ int is_zero(volatile unsigned int* reg,int bit);
 
@@ -122,6 +127,7 @@ typedef struct socket_context{
 	buffer_type_t buffer_info[MAX_BUFFER_NUM];
 	int buffer_read_count_record[MAX_BUFFER_NUM];//todo init=1
 
+	int recv_package_count[MAX_BUFFER_NUM];
 	int buffer_used;
 	int info_offset;
 	int info_count;
@@ -136,7 +142,7 @@ typedef struct socket_context{
 	int server_port;
 	int server_socket_id;
 	int is_accepting;
-	int accepted;
+	volatile int accepted;
 	connection_t * connection_builder;
 	connection_t connection_tbl[1024];
 	

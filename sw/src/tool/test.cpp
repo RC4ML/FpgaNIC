@@ -1,7 +1,10 @@
 #include"test.hpp"
 #include<iostream>
 #include "cuda/interface.cuh"
+#include "fpga/XDMA.h"
+#include "fpga/XDMAController.h"
 using namespace std;
+
 
 
 void socket_send_test(param_test_t param_in){

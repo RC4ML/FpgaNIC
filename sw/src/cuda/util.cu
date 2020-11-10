@@ -1,18 +1,18 @@
 #include "util.cuh"
-
+#include "tool/log.hpp"
 
 __device__ int is_zero(volatile unsigned int* reg,int bit){
 	return !((*reg)&(1<<bit));
 }
 
 __device__ int wait_done(volatile unsigned int* reg,int bit){
-	//printf("wait done bit:%d\n",bit);
+	cjdebug("wait done bit:%d\n",bit);
 	size_t time_out = 100000000000;
 	size_t s;
 	s = clock64();
 	while(is_zero(reg,bit)){
 		if(clock64()-s>time_out){
-			printf("waited reg:%x\n",*reg);
+			cjdebug("waited reg:%x\n",*reg);
 			return -1;
 		}
 	}
@@ -50,13 +50,37 @@ unsigned int get_ip()
     if (ioctl(sockfd, SIOCGIFADDR, &ifr) == 0) {    //SIOCGIFADDR 获取interface address
         memcpy(&sin, &ifr.ifr_addr, sizeof(ifr.ifr_addr));
 		std::string ip =  inet_ntoa(sin.sin_addr);
-		printf("ip: %s: ", ip.c_str());
+		cjinfo("ip: %s: ", ip.c_str());
 		unsigned int ip_int = (unsigned int)htonl(inet_addr(ip.data()));
-		printf("ip:%x\n",ip_int);
+		cjinfo("ip:%x\n",ip_int);
 		return ip_int;
 		
     }else{
-		printf("get ip failed!\n");
+		cjerror("get ip failed!\n");
 		return 0;
 	}
+}
+
+double get_fre(){
+	cudaDeviceProp device_prop;
+	cudaGetDeviceProperties(&device_prop, 0);
+	cjinfo("GPU最大时钟频率: %.0f MHz (%0.2f GHz)\n",device_prop.clockRate*1e-3f, device_prop.clockRate*1e-6f);
+	return device_prop.clockRate*1e-6f;//Ghz
+	
+}
+
+__global__ void test_timer_device()
+{
+	clock_t s,e;
+	BEGIN_SINGLE_THREAD_DO
+		s = clock64();
+		while(clock64()-s<17700000000){//10s
+
+		}
+	END_SINGLE_THREAD_DO
+    
+}
+void test_timer(){
+	test_timer_device<<<1,1>>>();
+	sleep(20);
 }

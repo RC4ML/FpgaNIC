@@ -30,3 +30,6 @@ cj_reboot $user2 $ip2 $pass2
 
 cj_ping $ip1
 cj_ping $ip2
+
+set cur_time [exec date "+%H:%M"]
+puts $cur_time

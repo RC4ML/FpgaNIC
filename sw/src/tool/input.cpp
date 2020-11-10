@@ -1,10 +1,11 @@
 #include"input.hpp"
+#include "tool/log.hpp"
 
 void start_cmd_control(fpga::XDMAController* controller){
 	string cmd;
 	int reg_id, value;
 	while(true){
-		cout<<"Enter cmd:\n";
+		cjdebug("Enter CMD:\n");
 		cin>>cmd;
 		if(cmd==string("rd")){
 			cin>>reg_id;

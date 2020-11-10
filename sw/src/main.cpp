@@ -19,10 +19,13 @@
 #include "main.h"
 #include "common.hpp"
 #include "cuda/interface.cuh"
+#include "cuda/util.cuh"
+#include "cuda/test.cuh"
 #include "tool/test.hpp"
 #include "tool/input.hpp"
 #include <fstream>
 #include <iostream>
+#include "tool/log.hpp"
 extern "C"
 void useCUDA();
 void write(void* addr);
@@ -51,30 +54,32 @@ void get_opt(int argc, char *argv[]){
         switch (o) {
             case 't':
 				if(optarg==string("server")){
-					printf("app_type:server\n");
+					cjdebug("app_type:server\n");
 					app_type = 1;
 				}else if(optarg==string("client")){
-					printf("app_type:client\n");
+					cjdebug("app_type:client\n");
 					app_type = 0;
 				}else{
-					printf("Error app_type!\n");
+					cjerror("Error app_type!\n");
 				}
                 break;
             case '?':
-                printf("error optopt: %c\n", optopt);
-                printf("error opterr: %d\n", opterr);
+                cjerror("error optopt: %c\n", optopt);
+                cjerror("error opterr: %d\n", opterr);
                 break;
         }
     }
 }
 
 int main(int argc, char *argv[]) {
+
+	// printf("fre:%f\n",get_fre());
+	// return 0;
 	get_opt(argc,argv);
 	set_page_table();
 	if(SHOWINFO){
 		cout<<"m_page_table.page_entries:"<<m_page_table.page_entries<<endl;
 	}
-	cout<<"first entry:"<<hex<<m_page_table.pages[0]<<endl;
 	for(unsigned int i=0;i<m_page_table.page_entries-1;i++){
 		size_t t = m_page_table.pages[i+1]-m_page_table.pages[i];
 		if(t!=65536){
@@ -83,18 +88,54 @@ int main(int argc, char *argv[]) {
 	}
 	param_test_t param;
 	param.controller = fpga::XDMA::getController();
-	//uint64_t* dmaBuffer =  (uint64_t*) fpga::XDMA::allocate(1024);//1024*1024*480
-	//param.addr = (uint64_t)dmaBuffer;
-	//param.cpu_buf = init_buf;
-	param.map_d_ptr = (void *)d_A;
-	//param.mem_size = gpu_mem_size;
-	param.tlb_start_addr = (unsigned int *)d_A;
+	#ifdef GPU_TLB
+		param.map_d_ptr = (void *)d_A;
+		param.tlb_start_addr = (unsigned int *)d_A;
+		param.d_mem_cpu = (void *)buf_ptr;
+	#endif
 
+	#ifdef CPU_TLB
+		uint64_t* dmaBuffer =  (uint64_t*) fpga::XDMA::allocate(2*1024*1024);//1024*1024*480
+		param.map_d_ptr = (void *)0;
+		param.tlb_start_addr = (unsigned int *)dmaBuffer;
+	#endif
+	
 
-	//stream_transfer(param);
-	socket_send_test(param);
-	sleep(3);
-	start_cmd_control(param.controller);
+	{//test latency and throughput of gpu and cpu
+		//test_cpu_gpu(param);
+		// int stride=32;
+		// for(int i=0;i<10;i++){
+		// 	test_simple(stride);
+		// 	stride*=4;
+		// }
+		
+	}
+	{//test fpga latency of gpu or cpu
+		// #ifdef GPU_TLB
+		// 	cjinfo("test gpu-fpga latency\n");
+		// 	for(int i=0;i<200;i++){
+		// 		test_latency_fpga_gpu(param);
+		// 	}
+		// #endif
+		// #ifdef CPU_TLB
+		// 	cjinfo("test cpu-fpga latency\n");
+		// 	for(int i=0;i<200;i++){
+		// 		test_latency_fpga_cpu(param);
+		// 	}
+		// #endif
+		
+	}
+
+	{
+		//cj_debug(param);
+	}
+
+	{//smart nic
+		socket_send_test(param);
+		sleep(3);
+		start_cmd_control(param.controller);
+	}
+	
 
 	{
 	//pressure test code
@@ -200,7 +241,7 @@ void set_page_table(){
 	do{
 		BREAK_IF_NEQ(gdr_pin_buffer(g, d_A, size, 0, 0, &mh), 0);
 		if(SHOWINFO){
-			printf("page entries:%lu\n",m_page_table.page_entries);
+			cjdebug("page entries:%lu\n",m_page_table.page_entries);
 			for(int i =0;i<30;i++){
 				cout<<i<<":"<<hex<<m_page_table.pages[i]<<endl;
 			}

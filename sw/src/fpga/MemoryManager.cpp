@@ -29,13 +29,14 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "tool/log.hpp"
 
 namespace fpga {
 
 MemoryManager::MemoryManager(void* _base, size_t _size) {
    base = _base;
    size = _size;
-   printf("memory manager init, base: %p, size: %lu\n", base, size);
+   cjinfo("memory manager init, base: %p, size: %lu\n", base, size);
    memset(base, 0, size);
    chunks = new MemChunk((unsigned char*) base, size);
 }

@@ -4,6 +4,7 @@
 #include "sys/time.h"
 #include <fstream>
 #include <iostream>
+#include "tool/log.hpp"
 
 using namespace std;
 ofstream outfile;
@@ -14,9 +15,6 @@ __global__ void GlobalCopy(int *out, const int *in, size_t N )
 	//avoid accessing cache, assure cold-cache access
 	int start = (blockIdx.x * blockDim.x + threadIdx.x);
     int step = (blockDim.x * gridDim.x);
-    // int step = 16 ;
-
-    // printf("start:%d\n",step);
 	int i;
 
     for ( i = start; i < N; i += step*1 ) {
@@ -45,7 +43,7 @@ __global__ void gpu_pressure(volatile unsigned int *data_addr,int iter,size_t bl
 	}
 	out[index]=0;
 	BEGIN_SINGLE_THREAD_DO
-		printf("###########gpu move start! total_threads:%d  opnum:%ld  iter_num:%d\n",total_threads,op_num,iter_num);
+		cjdebug("###########gpu move start! total_threads:%d  opnum:%ld  iter_num:%d\n",total_threads,op_num,iter_num);
 		s = clock64();
 	END_SINGLE_THREAD_DO
 
@@ -61,7 +59,7 @@ __global__ void gpu_pressure(volatile unsigned int *data_addr,int iter,size_t bl
 		e = clock64();
 		float time = (e-s)/1.41/1e9;
 		float speed = 1.0*block_length*iter/1024/1024/1024/time;
-		// printf("e-s:%ld  time=%f speed=%f GB/s \n",e-s,time,speed);
+		cjdebug("e-s:%ld  time=%f speed=%f GB/s \n",e-s,time,speed);
 	END_SINGLE_THREAD_DO
 }
 
@@ -121,9 +119,6 @@ void gpu_benchmark(param_test_t param_in,int burst,int ops,int start){
 	outfile.close();
 }
 void pressure_test(param_test_t param_in,int burst,int ops,int start){
-	// cudaDeviceProp device_prop;
-	// cudaGetDeviceProperties(&device_prop, 0);
-	// printf("GPU最大时钟频率: %.0f MHz (%0.2f GHz)\n",device_prop.clockRate*1e-3f, device_prop.clockRate*1e-6f);
 	outfile.open("data.txt", ios::out |ios::app );
 	int blocks=2048;
 	int threads=1024;
@@ -164,7 +159,7 @@ void pressure_test(param_test_t param_in,int burst,int ops,int start){
 	// 		break;
 	// 	}
 	// }
-	printf("###########gpu move done!\n");
+	cjdebug("###########gpu move done!\n");
 	cout<<endl<<endl;
 }
 
@@ -172,7 +167,7 @@ void socket_sample(param_interface_socket_t param_in){
 	socket_context_t* context = get_socket_context(param_in.buffer_addr,param_in.tlb_start_addr,param_in.controller);
 
 	int * data;
-	size_t total_data_length = 4*256*1024*1024;
+	size_t total_data_length = 2*256*1024*1024;
 	cudaMalloc(&data,total_data_length);
 
 	sock_addr_t addr;
@@ -182,33 +177,53 @@ void socket_sample(param_interface_socket_t param_in){
 	int* socket1;
 	cudaMalloc(&socket1,sizeof(int));
 
+	int* socket2;
+	cudaMalloc(&socket2,sizeof(int));
+
 	connection_t* connection1;
 	cudaMalloc(&connection1,sizeof(connection_t));
 
+	connection_t* connection2;
+	cudaMalloc(&connection2,sizeof(connection_t));
+
 	cudaStream_t stream;
 	cudaStreamCreate(&stream);
-	sleep(3);
-	printf("---start user code:\n");
+	sleep(1);
+	cjprint("start user code:\n");
 
 	int verify_data_offset = 5;
-	int transfer_data_length = 40*1024*1024;
+	int transfer_data_length = 4*1024*1024;
+	param_in.controller->writeReg(165,(unsigned int)(transfer_data_length/64));//count code
+	param_in.controller->writeReg(183,(unsigned int)(transfer_data_length/64));
 	if(app_type==0){
 		//client code
 		create_socket<<<1,1,0,stream>>>(context,socket1);
 		compute<<<1,1024,0,stream>>>(data,total_data_length,verify_data_offset);
 		connect<<<1,1,0,stream>>>(context,socket1,addr);
-		socket_send<<<1,8,0,stream>>>(context,socket1,data,transfer_data_length);
+		socket_send<<<1,1024,0,stream>>>(context,socket1,data,transfer_data_length);
+		//socket_close<<<1,1,0,stream>>>(context,socket1);
+		// create_socket<<<1,1,0,stream>>>(context,socket2);
+		// connect<<<1,1,0,stream>>>(context,socket2,addr);
+		// socket_send<<<1,8,0,stream>>>(context,socket2,data,transfer_data_length);
 	}else if(app_type==1){
 		//server code
 		create_socket<<<1,1,0,stream>>>(context,socket1);
 		socket_listen<<<1,1,0,stream>>>(context,socket1,1235);
 		accept<<<1,1,0,stream>>>(context,socket1,connection1);
-		socket_recv<<<1,8,0,stream>>>(context,connection1,data,transfer_data_length);
+		cudaError_t cudaerr = cudaPeekAtLastError();
+		socket_recv<<<1,1024,0,stream>>>(context,connection1,data,transfer_data_length);
 		verify<<<1,1,0,stream>>>(data,transfer_data_length,verify_data_offset);
 		//socket_close<<<1,1,0,stream>>>(context,connection1);
+		// accept<<<1,1,0,stream>>>(context,socket1,connection2);
+		// socket_recv<<<1,8,0,stream>>>(context,connection2,data,transfer_data_length);
+		// verify<<<1,1,0,stream>>>(data,transfer_data_length,verify_data_offset);
 	}else{
-		printf("app_type not set!\n");
+		cjerror("app_type not set!\n");
 	}
+	sleep(5);
+	cudaError_t cudaerr = cudaPeekAtLastError();
+	ErrCheck(cudaerr);
+
 
 }
 
