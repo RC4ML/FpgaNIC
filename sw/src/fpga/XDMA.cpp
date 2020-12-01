@@ -120,7 +120,8 @@ void XDMA::initializeMemory() {
 	
 	#ifdef GPU_TLB
 		unsigned long vaddr = (unsigned long) d_A;
-		 cjinfo("vaddr start:%lx",vaddr);
+		 cjinfo("vaddr start:%lx\n",vaddr);
+		 cjinfo("paddr start:%lx\n",(unsigned long)m_page_table.pages[0]);
 		for (int i = 0; i < int(m_page_table.page_entries/32); i++) { 
 			controller->writeTlb(vaddr, m_page_table.pages[i*32], (i == 0));
 			vaddr += (2*1024*1024);

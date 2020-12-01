@@ -14,8 +14,11 @@
 #define MAX_INFO_NUM 1024
 #define MAX_BUFFER_NUM 4
 
-#define PACKAGE_LENGTH_512 512
+#define PACKAGE_LENGTH_512 2048
 //64 bytes 256=16K
+
+#define TOKEN_SPEED 1
+//26:9.85GB/s 25:10.24GB/s 24:10.67GB/s 23:11.13GB/s
 
 #define SINGLE_BUFFER_LENGTH 25*1024*1024
 #define TOTAL_BUFFER_LENGTH 100*1024*1024
@@ -29,8 +32,8 @@
 
 #define FIRST_THREAD_IN_BLOCK() ((threadIdx.x + threadIdx.y + threadIdx.z) == 0)
 #define FIRST_BLOCK() ( blockIdx.x + blockIdx.y + blockIdx.z == 0)
-#define BEGIN_DO_AS_BLOCK __syncthreads(); if(FIRST_THREAD_IN_BLOCK()) { do{
-#define END_DO_AS_BLOCK }while(0); } __syncthreads();
+#define BEGIN_BLOCK_ZERO_DO __syncthreads(); if(FIRST_THREAD_IN_BLOCK()) { do{
+#define END_BLOCK_ZERO_DO }while(0); } __syncthreads();
 
 #define BEGIN_SINGLE_THREAD_DO __syncthreads(); if(FIRST_BLOCK()&&FIRST_THREAD_IN_BLOCK()) { do{
 #define END_SINGLE_THREAD_DO }while(0); } __syncthreads();
@@ -85,9 +88,12 @@ typedef struct fpga_registers{
 	volatile unsigned int* tcp_conn_close_session;
 	volatile unsigned int* tcp_conn_close_start;
 
+	volatile unsigned int* send_cmd_fifo_count;
+
 	//bypass
 	volatile unsigned int* send_data_cmd_bypass_reg;
 	volatile unsigned int* recv_read_count_bypass_reg;
+	
 }fpga_registers_t;
 
 
@@ -117,6 +123,11 @@ typedef struct buffer_type{
 
 
 typedef struct socket_context{
+	volatile long recv_fifo_length[MAX_BUFFER_NUM][16];
+	volatile int recv_fifo_addr_offset[MAX_BUFFER_NUM][16];//in int instead of byte
+	volatile int recv_fifo_wr[MAX_BUFFER_NUM];
+	volatile int recv_fifo_rd[MAX_BUFFER_NUM][4];
+
 	volatile unsigned long send_read_count[MAX_BUFFER_NUM];
 	volatile unsigned long send_write_count[MAX_BUFFER_NUM];
 	volatile unsigned long recv_read_count[MAX_BUFFER_NUM];
@@ -168,6 +179,8 @@ typedef struct socket_context{
 
 	volatile unsigned int* tcp_conn_close_session;
 	volatile unsigned int* tcp_conn_close_start;
+
+	volatile unsigned int* send_cmd_fifo_count;
 
 
 	//bypass

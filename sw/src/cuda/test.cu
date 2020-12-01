@@ -4,6 +4,8 @@
 #include <time.h>
 #include <fstream>
 #include <iostream>
+#include "sys/time.h"
+#include "tool/log.hpp"
 
 
 using namespace std;
@@ -13,6 +15,157 @@ static unsigned int * ctrl_addr0;
 static unsigned int * ctrl_addr1;
 static unsigned int * bypass_addr0;
 static unsigned int * bypass_addr1;
+
+ofstream outfile;
+__global__ void GlobalCopy(int *out, const int *in, size_t N )
+{
+    int temp[16];
+	N=size_t(N/4);
+	//avoid accessing cache, assure cold-cache access
+	int start = (blockIdx.x * blockDim.x + threadIdx.x);
+    int step = (blockDim.x * gridDim.x);
+	int i;
+
+    for ( i = start; i < N; i += step*1 ) {
+        for ( int j = 0; j <1; j++ ) {
+            // int index = i;//+j*blockDim.x;;
+            temp[j] += in[i + j*step];
+        }
+    }
+    for(int j=0;j<1;j++){
+        out[j] = temp[j];
+    }
+    
+}
+
+
+
+__global__ void gpu_pressure(volatile unsigned int *data_addr,int iter,size_t block_length,unsigned int *out){
+	int index = blockIdx.x*blockDim.x+threadIdx.x;
+	size_t op_num = size_t(block_length/sizeof(int));
+	int total_threads = blockDim.x*gridDim.x;
+	size_t iter_num = size_t(op_num/total_threads);
+	clock_t s,e;
+
+	for(size_t i=0;i<iter_num;i++){
+		data_addr[total_threads*i+index] = 1;
+	}
+	out[index]=0;
+	BEGIN_SINGLE_THREAD_DO
+		cjdebug("###########gpu move start! total_threads:%d  opnum:%ld  iter_num:%ld\n",total_threads,op_num,iter_num);
+		s = clock64();
+	END_SINGLE_THREAD_DO
+
+	
+	for(int it=0;it<iter;it++){
+		for(size_t i=0;i<iter_num;i++){
+			out[index]+=data_addr[total_threads*i+index];
+		}
+	}
+
+	
+	BEGIN_SINGLE_THREAD_DO
+		e = clock64();
+		float time = (e-s)/1.41/1e9;
+		float speed = 1.0*block_length*iter/1024/1024/1024/time;
+		cjdebug("e-s:%ld  time=%f speed=%f GB/s \n",e-s,time,speed);
+	END_SINGLE_THREAD_DO
+}
+
+void gpu_benchmark(param_test_t param_in,int burst,int ops,int start){
+	sleep(1);
+	fpga::XDMAController* controller = param_in.controller;
+
+	unsigned long tlb_start_addr_value = (unsigned long)param_in.tlb_start_addr;
+	controller->writeReg(32,(unsigned int)tlb_start_addr_value);
+	controller->writeReg(33,(unsigned int)(tlb_start_addr_value>>32));
+
+	unsigned int* recv_tlb_start_addr = param_in.tlb_start_addr+int((100*1024*1024)/sizeof(int));
+	unsigned long recv_tlb_start_addr_value = (unsigned long)recv_tlb_start_addr;
+	controller->writeReg(34,(unsigned int)recv_tlb_start_addr_value);
+	controller->writeReg(35,(unsigned int)(recv_tlb_start_addr_value>>32));
+
+	cout<<"start fpga workload\n";
+	int rd_sum,wr_sum;
+	float rd_speed,wr_speed;
+	int total_length = 25*1024*1024 ;
+
+	controller ->writeReg(36,total_length);
+	controller ->writeReg(37,ops);
+	controller ->writeReg(38,burst);
+	controller ->writeReg(39,0);
+	controller ->writeReg(39,start);
+	sleep(10);
+  	controller ->writeReg(39,0);
+	
+	
+	rd_sum = controller ->readReg(592);
+	wr_sum = controller ->readReg(576);
+	// cout << "wr_sum: " << wr_sum <<endl; 
+  	// cout << "rd_sum: " << rd_sum <<endl;
+	wr_speed = 1.0*burst*ops*250/wr_sum/1000;
+	rd_speed = 1.0*burst*ops*250/rd_sum/1000;
+	cout<<"busrt:"<<burst<<" ops:"<<ops<<" mode:"<<start<<endl;
+	
+	
+	if(start==2){//read
+		cout << " dma_read_cmd_counter0: " <<controller -> readReg(525) <<endl;
+		cout <<  std::dec << "rd_speed: " << rd_speed << " GB/s" << endl;
+		outfile<<rd_speed<<endl;
+	}
+	if(start==1){//write
+		cout << " dma_write_cmd_counter1: " <<controller ->readReg(522) <<endl;
+		cout <<  std::dec << "wr_speed: " << wr_speed << " GB/s" << endl;
+		outfile<<wr_speed<<endl;
+	}
+	if(start==3){
+		cout << " dma_read_cmd_counter0: " <<controller -> readReg(525) <<endl;
+		cout << " dma_write_cmd_counter1: " <<controller ->readReg(522) <<endl;
+		cout <<  std::dec << "wr_speed: " << wr_speed << " GB/s" << endl;
+		cout <<  std::dec << "rd_speed: " << rd_speed << " GB/s" << endl;
+		outfile<<wr_speed<<" "<<rd_speed<<endl;
+	}
+	outfile.close();
+}
+__global__ void cal(){
+	while(1){
+
+	}
+}
+void pressure_test(param_test_t param_in,int burst,int ops,int start){
+	outfile.open("data.txt", ios::out |ios::app );
+	int blocks=1;
+	int threads=512;
+	int total=blocks*threads;
+	unsigned int * out;
+	unsigned int * out_cpu = new unsigned int[total];
+	cudaMalloc(&out,sizeof(unsigned int)*total);
+
+	// double elapsedTime;
+	struct timeval t_start, t_end;
+    gettimeofday(&t_start,NULL);
+
+	// int iter = 50000;
+	// size_t buffer_size = 200*1024*1024;
+	//gpu_pressure<<<blocks,threads>>>((unsigned int *)param_in.map_d_ptr,iter,buffer_size,out);
+	cal<<<1,1>>>();
+	// for(int i=0;i<50000;i++){
+	// 	GlobalCopy<<<blocks,threads>>>((int *)out,(int *)param_in.map_d_ptr,200*1024*1024);
+	// }
+	
+	gpu_benchmark(param_in,burst,ops,start);
+	//cudaThreadSynchronize();
+	cudaError_t cudaerr = cudaPeekAtLastError();
+	ErrCheck(cudaerr);
+	gettimeofday(&t_end,NULL);
+	// elapsedTime =  t_end.tv_sec - t_start.tv_sec + (t_end.tv_usec - t_start.tv_usec)/1000000.0;
+	// cout<<"Time:"<<elapsedTime<<endl;
+	// cout<<"speed"<<1.0*iter*buffer_size/elapsedTime/1024/1024/1024 << endl;
+	
+	cjdebug("###########gpu move done!\n");
+	cout<<endl<<endl;
+}
+
 void test_latency_fpga_cpu(param_test_t param_in){
 	ofstream outctrl,outbypass,outdma;
 	outctrl.open("latency_ctrl.txt", ios::out |ios::app );
@@ -60,8 +213,8 @@ __global__ void test_latency_fpga_gpu_cuda(unsigned int * ctrl_addr0,unsigned in
 	int index = blockIdx.x*blockDim.x+threadIdx.x;	
 	__shared__ unsigned int res0[16];
 	__shared__ unsigned int res1[16];
-	unsigned int res_ctrl0;
-	unsigned int res_ctrl1;
+	// unsigned int res_ctrl0;
+	// unsigned int res_ctrl1;
 	
 	// BEGIN_SINGLE_THREAD_DO// read ctrl reg
 	// 	res_ctrl0 = (*ctrl_addr0);
@@ -140,78 +293,30 @@ void test_latency_fpga_gpu(param_test_t param_in){
 }
 
 
-__global__ void init_mem(int * addr,int *addr_cpu,int offset){
-	for(int i=0;i<200*1024*1024/4;i++){
-		if(addr[i]!=i+offset){
-			printf("gpu mem %d %d\n",i,addr[i]);
-			break;
-		}
-		// if(addr_cpu[i]!=i+offset){
-		// 	printf("cpu mem %d %d\n",i,addr_cpu[i]);
-		// 	break;
-		// }
-	}
-	printf("init mem done!\n");
-}
-__global__ void cal(){
+__global__ void cal(char data,int times){
 	size_t i = 0;
-	printf("caling\n");
+	int t=0;
 	while(1){
 		i++;
-		if(i%100000000==0){
-			printf("looping\n");
+		if(i%30000000==0){
+			printf("caling %c\n",data);
+			t++;
+			if(t>=times){
+				break;
+			}
 		}
 	}
 }
-void test_cpu_gpu(param_test_t param_in){
-	//cal<<<1,1>>>();
-	int num = 50*1024*1024;
-	int size = 200*1024*1024;
-	int *cpu_mem=(int *)malloc(200*1024*1024);
-	int *gpu_mem=(int *)param_in.map_d_ptr;
-	int *gpu_mem_cpu_ptr=(int *)param_in.d_mem_cpu;
-	int * cpu_mem_gpu_ptr;
 
-	cudaError_t err = cudaHostRegister(cpu_mem,200*1024*1024,cudaHostRegisterMapped);
-	ErrCheck(err);
-	cudaHostGetDevicePointer((void **) &(cpu_mem_gpu_ptr), cpu_mem, 0);
-	int offset=5;
-	for(int i=0;i<200*1024*1024/4;i++){
-		gpu_mem_cpu_ptr[i]=offset+i;
-		cpu_mem[i]=offset+i;
-	}
-	//init_mem<<<1,1>>>(gpu_mem,cpu_mem_gpu_ptr,offset);
-
-	printf("start test cpu and gpu!\n");
-	struct timespec beg, end;
-
-	int *cpu_buf=(int *)malloc(2000*1024*1024);
-
-	printf("start copy\n");
-
-	{
-	clock_gettime(CLOCK_MONOTONIC, &beg);
-		memcpy(gpu_mem_cpu_ptr,cpu_mem,size);
-		//memcpy(cpu_mem,gpu_mem_cpu_ptr,size);
-	clock_gettime(CLOCK_MONOTONIC, &end);
-	printf("end copy\n");
-	}
-
-	double byte_count = (double) size;
-	double dt_ms = (end.tv_nsec-beg.tv_nsec)/1000000.0 + (end.tv_sec-beg.tv_sec)*1000.0;
-	double Bps = byte_count / dt_ms * 1e3;
-	cout << "BW: " << Bps / 1024.0 / 1024.0 << "MB/s" << endl;
-
-}
 
 __global__ void compute_cuda(volatile int * data){
 	size_t s,e;
 	int index=0;
 	int next_index;
-	int res[100];
-	long int lat[100];
+	int res[200];
+	long int lat[200];
 
-	for(int i=0;i<100;i++){
+	for(int i=0;i<200;i++){
 		s = clock64();
 		next_index = data[index];
 		res[i] = next_index;
@@ -224,11 +329,11 @@ __global__ void compute_cuda(volatile int * data){
 	}
 	BEGIN_SINGLE_THREAD_DO
 		int sum=0;
-		for(int i=0;i<100;i++){
+		for(int i=0;i<200;i++){
 			sum+=res[i];
 		}
 		printf("res sum:%d\n",sum);
-		for(int i=0;i<100;i++){
+		for(int i=0;i<200;i++){
 			data[i]=lat[i];
 		}
 	END_SINGLE_THREAD_DO
@@ -258,61 +363,64 @@ __global__ void compute_cuda(volatile int * data){
 // }
 void test_simple(int stride){
 	{//throughput
-		// ofstream out;
-		// out.open("bw.txt", ios::out |ios::app );
-		// struct timespec beg, end;
-		// size_t N = size_t(1000)*1024*1024;
-		// size_t size = N*sizeof(int);
+		ofstream out;
+		out.open("bw.txt", ios::out |ios::app );
+		struct timespec beg, end;
+		size_t N = size_t(2)*1024*1024;//workspace size
+		size_t size = N*sizeof(int);
 		
-		// int *data;//pinned
-		// cudaMallocHost(&data,size);
+		int *data;//pinned
+		cudaMallocHost(&data,size);
 		
-		// //int *data = (int *)malloc(size);
+		//int *data = (int *)malloc(size);
 		
-		// int *data_dst;
-		// cudaMalloc(&data_dst, size);
+		int *data_dst;
+		cudaMalloc(&data_dst, size);
 		
-		// for(int i=0;i<N;i++){
-		// 	data[i] = i;
-		// }
-		// clock_gettime(CLOCK_MONOTONIC, &beg);
-		// cudaMemcpy(data_dst,data,size,cudaMemcpyHostToDevice);
-		// cudaDeviceSynchronize();
-		// clock_gettime(CLOCK_MONOTONIC, &end);
-		// double t = 1.0*(end.tv_nsec-beg.tv_nsec)/(1e9)+(end.tv_sec-beg.tv_sec);//seconds
-		// double bw = 1.0*N*4/t/1024/1024/1024;
-		// printf("t:%f\n",t);
-		// printf("bw:%f\n",bw);
-		// out<<bw<<endl;
-		// out.close();
-		// cudaFree((void*)data);
-		// cudaFree((void*)data_dst);
+		for(int i=0;i<N;i++){
+			data[i] = i;
+		}
+		int op_times = int(size/stride);
+		int burst = int(stride/4);
+		clock_gettime(CLOCK_MONOTONIC, &beg);
+		for(int i=0;i<op_times;i++){
+			cudaMemcpy(data_dst+i*burst,data+i*burst,stride,cudaMemcpyHostToDevice);
+		}
+		
+		cudaDeviceSynchronize();
+		clock_gettime(CLOCK_MONOTONIC, &end);
+		double t = 1.0*(end.tv_nsec-beg.tv_nsec)/(1e9)+(end.tv_sec-beg.tv_sec);//seconds
+		double bw = 1.0*N*4/t/1024/1024/1024;
+		//printf("t:%f\n",t);
+		printf("%f\n",bw);
+		out<<bw<<endl;
+		out.close();
+		cudaFree((void*)data);
+		cudaFree((void*)data_dst);
 	}
 	{//latency
-		ofstream out;
-		out.open("latency.txt", ios::out |ios::app );
-		struct timespec beg, end;
-		size_t N = size_t(1000)*1024*1024;
-		size_t size = N*sizeof(int);
-		volatile int *data;
-		cudaMallocManaged(&data, N*sizeof(int));
+		// ofstream out;
+		// out.open("latency.txt", ios::out |ios::app );
+		// size_t N = size_t(4000)*1024*1024;
+		// volatile int *data;
+		// cudaMallocHost(&data, N*sizeof(int));
 
-		int next_index=stride/sizeof(int);
+		// int next_index=stride/sizeof(int);
 
-		for(int index=0;index<N; ){
-			data[index] = next_index;
-			index = next_index;
-			next_index+=stride/sizeof(int);
-		}
+		// for(int index=0;index<N; ){
+		// 	data[index] = next_index;
+		// 	index = next_index;
+		// 	next_index+=stride/sizeof(int);
+		// }
 
-		int tmp=0;
-		compute_cuda<<<1,1>>>(data);
-		cudaDeviceSynchronize();
-		out<<"stride:"<<stride<<endl;
-		for(int i=0;i<100;i++){
-			out<<data[i]<<endl;
-		}
-		out.close();
+		// int tmp=0;
+		// compute_cuda<<<1,1>>>(data);
+		// cudaDeviceSynchronize();
+		// out<<"stride:"<<stride<<endl;
+		// for(int i=0;i<200;i++){
+		// 	out<<data[i]<<endl;
+		// }
+		// out.close();
 	}
 
 }
@@ -345,14 +453,65 @@ __global__ void mk(int *dst,int * src,int length){
 
 
 void cj_debug(param_test_t param_in){
-	fpga::XDMAController* controller = param_in.controller;
+	// fpga::XDMAController* controller = param_in.controller;
+
+	cudaStream_t stream1,stream2;
+	cudaEvent_t event1,event2;
+	cudaStreamCreate(&stream1); 	
+	cudaStreamCreate(&stream2);
+	cudaEventCreate(&event1);
+	cudaEventCreate(&event2);
+
+	cal<<<1,1,0,stream1>>>('A',5);
+	cudaEventRecord(event1, stream1);
+	cudaStreamWaitEvent(stream2, event1,0);
+	cal<<<1,1,0,stream1>>>('B',5);
+	cal<<<1,1,0,stream2>>>('C',5);
+	cudaEventRecord(event2, stream2);
+	cudaStreamWaitEvent(stream1, event2,0);
+	cal<<<1,1,0,stream2>>>('D',5);
+
+
+
+}
+
+__global__ void gpu_tp_test(int * src,int *dst,size_t length,double fre,double* speed){
+	int index = blockIdx.x*blockDim.x+threadIdx.x;
+	int total_threads = blockDim.x*gridDim.x;
+	int op_num = int(length/sizeof(int));
+	int iter_num = int(op_num/total_threads);
+	clock_t s,e;
+	s=clock64();
+	for(int i=0;i<iter_num;i++){
+		dst[total_threads*i+index]	=	src[total_threads*i+index];
+	}
+	e=clock64();
+	if(threadIdx.x==0){
+		clock_t cycles=e-s;
+		double t = cycles/fre/1e9;
+		(*speed) = length/t/1024/1024/1024;
+		printf("cycles:%ld t:%f speed:%f\n",cycles,t,*speed);
+	}	
+
+}
+void test_gpu_throughput(param_test_t param_in){
+	int * gpu_direct_mem = (int *)param_in.map_d_ptr;
 	int * data;
-	size_t total_data_length = 2*1024*1024;
+	size_t total_data_length = 8*1024;
 	cudaMalloc(&data,total_data_length);
 
-	int * gpu_buf = (int *)param_in.map_d_ptr;
-	cp<<<1,1024>>>(data,total_data_length,3);
-	sleep(5);
-	mk<<<1,1024>>>(gpu_buf,data,total_data_length);
+	double fre = get_fre();
 
+	double *speed;
+	cudaMallocManaged(&speed,sizeof(double));
+
+	struct timespec beg, end;
+	clock_gettime(CLOCK_MONOTONIC, &beg);
+	gpu_tp_test<<<1,32>>>(data,gpu_direct_mem,total_data_length,fre,speed);
+	cudaDeviceSynchronize();
+	clock_gettime(CLOCK_MONOTONIC, &end);
+	double dt_ms = (end.tv_nsec-beg.tv_nsec)/1000000.0 + (end.tv_sec-beg.tv_sec)*1000.0;
+	double Bps = total_data_length / dt_ms * 1e3;
+	cout << "BW: " << Bps / 1024.0 / 1024.0 << "MB/s" << endl;
+	cout<<*speed<<endl;
 }

@@ -27,6 +27,7 @@ void copy_to_cpu();
 void close_device();
 
 extern int app_type;
+extern int node_index;
 extern CUdeviceptr d_A;
 
 typedef struct param_test{

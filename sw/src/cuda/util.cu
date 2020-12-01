@@ -7,7 +7,7 @@ __device__ int is_zero(volatile unsigned int* reg,int bit){
 
 __device__ int wait_done(volatile unsigned int* reg,int bit){
 	cjdebug("wait done bit:%d\n",bit);
-	size_t time_out = 100000000000;
+	size_t time_out = 10000000000;
 	size_t s;
 	s = clock64();
 	while(is_zero(reg,bit)){
@@ -30,6 +30,9 @@ __device__ void unlock(int *mutex){
 __device__ int cu_sleep(double seconds){
 	size_t s = clock64();
 	while( clock64()-s<size_t(3000000000.0*seconds)){//1s = 3000000000
+		// if(seconds==0.01){
+		// 	printf("here is the %ld %ld\n",s,clock64());
+		// }
 	};
 	return int(s);
 }
@@ -71,7 +74,7 @@ double get_fre(){
 
 __global__ void test_timer_device()
 {
-	clock_t s,e;
+	clock_t s;
 	BEGIN_SINGLE_THREAD_DO
 		s = clock64();
 		while(clock64()-s<17700000000){//10s

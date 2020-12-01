@@ -103,7 +103,7 @@ __global__ void connect(socket_context_t* ctx,int *socket,sock_addr_t addr){
 		*(ctx->conn_buffer_id)	=	buffer_id;
 		*(ctx->conn_start)	=	1;
 		volatile int res = wait_done(ctx->con_session_status,17);
-		cjinfo("connect response reg :%x\n",res);
+		//cjinfo("connect response reg :%x\n",res);
 		*(ctx->conn_start)	=	0;
 
 		if(res==-1){//timeout
@@ -146,9 +146,8 @@ socket_context_t* get_socket_context(unsigned int *dev_buffer,unsigned int *tlb_
 	
 	//dev_buffer corresponds to tlb_start_addr
 	cjinfo("socket get context function called!\n");
-	cudaStream_t stream_send,stream_recv;
+	cudaStream_t stream_send;
 	cudaStreamCreate(&stream_send);
-	cudaStreamCreate(&stream_recv);
 
 	socket_context_t* ctx;
 	cudaMalloc(&ctx,sizeof(socket_context_t));
@@ -160,16 +159,19 @@ socket_context_t* get_socket_context(unsigned int *dev_buffer,unsigned int *tlb_
 	//mac
 	unsigned int mac = ip;
 	controller->writeReg(128,mac);
-	cjinfo("mac:%d\n",ip>>24);
+	cjinfo("mac:%d\n",ip&0xff);
 
 
 	//send buffer
 	unsigned long tlb_start_addr_value = (unsigned long)tlb_start_addr;
+	cjinfo("send buffer addr start:%ld\n",(unsigned long)tlb_start_addr);
 	controller->writeReg(160,(unsigned int)tlb_start_addr_value);
 	controller->writeReg(161,(unsigned int)(tlb_start_addr_value>>32));
 	controller->writeReg(162,SINGLE_BUFFER_LENGTH);
 	
 	controller->writeReg(164,MAX_BUFFER_NUM);
+
+	controller->writeReg(166,TOKEN_SPEED);
 
 	//recv buffer
 
@@ -201,6 +203,8 @@ socket_context_t* get_socket_context(unsigned int *dev_buffer,unsigned int *tlb_
 
 	registers.tcp_conn_close_session		=	map_reg_4(136,controller);
 	registers.tcp_conn_close_start			=	map_reg_4(137,controller);
+
+	registers.send_cmd_fifo_count			=	map_reg_4(659,controller);
 	
 
 	registers.send_data_cmd_bypass_reg		=	map_reg_64(3,controller);
@@ -331,18 +335,18 @@ __device__ void read_info(socket_context_t* ctx){
 		ctx->info_offset+=16;//++512 bit
 		ctx->info_count++;
 		int info_type = ctx->info_buffer[offset+1];
-		cjinfo("read a info, type:%d\n",info_type);//cjmark
-		for(int i=0;i<16;i++){//cjmark
-			cjdebug("%x ",ctx->info_buffer[offset+i]);
-		}
-		cjdebug("\n");
+		// cjinfo("read a info, type:%d\n",info_type);//cjmark
+		// for(int i=0;i<16;i++){//cjmark
+		// 	cjdebug("%x ",ctx->info_buffer[offset+i]);
+		// }
+		// cjdebug("\n");
 		if(info_type==2){//update read_count
 			int buffer_id = ctx->info_buffer[offset+2];//todo seq done
 			unsigned long read_count=(ctx->info_buffer[offset+7]);
 			read_count = read_count<<32;
 			read_count+=ctx->info_buffer[offset+6];
 			ctx->send_read_count[buffer_id] = read_count;
-			cjdebug("---update rd count buffer:%d with %lx\n",buffer_id,read_count);//cjmark
+			//cjdebug("---update rd count buffer:%d with %lx\n",buffer_id,read_count);//cjmark
 		}else if(info_type==0){//open todo
 			if(ctx->is_accepting == 0){
 				cjerror("nobody is accepting\n");
@@ -416,6 +420,7 @@ __device__ int get_empty_buffer(socket_context_t* ctx){
 	}else{
 		for(int i=0;i<MAX_BUFFER_NUM;i++){
 			if(ctx->buffer_valid[i] == 0){
+				ctx->buffer_valid[i] = 1;//to do seq
 				cjdebug("get empty buffer %d\n",i);
 				return i;
 			}

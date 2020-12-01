@@ -3,11 +3,11 @@
 #include "tool/log.hpp"
  __global__ void verify(int * data,size_t length,int offset){
 	 int count=0;
-	 int count_1024=0;
 	 int flag=1;
 	 int wrong_index;
 	 int wrong_value;
 	 int right_value;
+	 int count_2m=0;
 	 BEGIN_SINGLE_THREAD_DO
 		size_t op_num = size_t(length/sizeof(int));
 		printf("start verify %ld\n",op_num);
@@ -20,14 +20,17 @@
 					flag=0;
 				}
 				count+=1;
+				if(i+offset-data[i]==524288){
+					count_2m+=1;
+				}
 			}
 		}
 		if(flag==1){
 			printf("verify data success!\n");
 		}else{
 			printf("verify data failed!\n");
-			printf("index:%d data:%d which should be %d\n",wrong_index,wrong_value,right_value);			
-			printf("wrong num:%d  \n",count);
+			printf("index:%d data: %d which should be %d\n",wrong_index,wrong_value,right_value);			
+			printf("wrong num: %d  wrong2m: %d\n",count,count_2m);
 		}
 		
 	 END_SINGLE_THREAD_DO
@@ -185,7 +188,6 @@ __global__ void readBypassReg(volatile unsigned int *dev_addr,int *blocks){
 }
 __global__ void writeReg(volatile unsigned int *dev_addr,int *blocks){
 	
-	printf("enter writeReg thread with addr:%x\n",dev_addr);
 	int index = blockIdx.x*blockDim.x+threadIdx.x;
 	int stride = blocks[0]*blockDim.x;
 	int num = int(1024*1024/4/stride);

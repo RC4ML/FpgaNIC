@@ -13,7 +13,7 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 
 # Set up compilation options
 set (CMAKE_CXX_STANDARD 14)
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -mavx")
+#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -mavx")
 
 set (CMAKE_C_STANDARD 11)
 
@@ -22,7 +22,7 @@ set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pthread -mavx")
 
 
 
-add_compile_options(-O0)
+add_compile_options(-O3)
 #set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -rdc=true ")
 
 if(CUDA_ENABLE)
@@ -45,6 +45,7 @@ CUDA_ADD_EXECUTABLE(dma-example
 	cuda/util.cu
 	cuda/network_kernel.cu
 	cuda/test.cu
+	cuda/app.cu
 	tool/test.cpp
 	tool/input.cpp
 	tool/log.cpp

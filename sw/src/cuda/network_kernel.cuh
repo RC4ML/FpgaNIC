@@ -15,11 +15,16 @@ __global__ void socket_send(socket_context_t* ctx,connection_t* connection,int *
 __device__ void _socket_send(socket_context_t* ctx,int buffer_id,int * data_addr,size_t length);
 
 
-__global__ void socket_recv(socket_context_t* ctx,int* socket,int * data_addr,size_t length,size_t* swap_data);//check
+__global__ void socket_recv_ctrl(socket_context_t* ctx,connection_t* connection,int * data_addr,size_t length);//check
 
-__global__ void socket_recv(socket_context_t* ctx,connection_t* connection,int * data_addr,size_t length,size_t* swap_data);//check
+__global__ void socket_recv(socket_context_t* ctx,int* socket,int * data_addr,size_t length);//check
 
-__device__ void _socket_recv(socket_context_t* ctx,int buffer_id,int * data_addr,size_t length,size_t* swap_data);
+__global__ void socket_recv(socket_context_t* ctx,connection_t* connection,int * data_addr,size_t length);//check
+
+__device__ void _socket_recv(socket_context_t* ctx,int buffer_id,int * data_addr,size_t length);
+
+__device__ void _socket_recv_data(socket_context_t* ctx,int buffer_id,int * data_addr,size_t length);
+
 
 
 __global__ void send_kernel(socket_context_t* ctx,unsigned int *dev_buffer,fpga_registers_t registers);//check

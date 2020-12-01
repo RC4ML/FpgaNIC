@@ -21,6 +21,7 @@
 #include "cuda/interface.cuh"
 #include "cuda/util.cuh"
 #include "cuda/test.cuh"
+#include "cuda/app.cuh"
 #include "tool/test.hpp"
 #include "tool/input.hpp"
 #include <fstream>
@@ -45,10 +46,11 @@ gdr_mh_t mh;
 uint32_t *buf_ptr;
 void *map_d_ptr  = NULL;
 int app_type = -1;
+int node_index = -1;
 
 void get_opt(int argc, char *argv[]){
 	int o;  // getopt() 的返回值
-    const char *optstring = "t:"; // 设置短参数类型及是否需要参数
+    const char *optstring = "t:n:"; // 设置短参数类型及是否需要参数
 
      while ((o = getopt(argc, argv, optstring)) != -1) {
         switch (o) {
@@ -63,6 +65,10 @@ void get_opt(int argc, char *argv[]){
 					cjerror("Error app_type!\n");
 				}
                 break;
+			case 'n':
+				node_index = atoi(optarg);
+				cjdebug("node_index:%d\n",node_index);
+				break;
             case '?':
                 cjerror("error optopt: %c\n", optopt);
                 cjerror("error opterr: %d\n", opterr);
@@ -101,16 +107,18 @@ int main(int argc, char *argv[]) {
 	#endif
 	
 
-	{//test latency and throughput of gpu and cpu
-		//test_cpu_gpu(param);
-		// int stride=32;
-		// for(int i=0;i<10;i++){
+	{//test latency and throughput between gpu and cpu
+		// int stride=64;
+		// for(int i=0;i<6;i++){
 		// 	test_simple(stride);
-		// 	stride*=4;
+		// 	stride*=2;
 		// }
+
+		//test_simple(32*1024*1024);
+
 		
 	}
-	{//test fpga latency of gpu or cpu
+	{//test fpga latency with gpu or cpu
 		// #ifdef GPU_TLB
 		// 	cjinfo("test gpu-fpga latency\n");
 		// 	for(int i=0;i<200;i++){
@@ -126,25 +134,33 @@ int main(int argc, char *argv[]) {
 		
 	}
 
+	{//gpu mem throughput test on block nums and threads
+		//test_gpu_throughput(param);
+	}
+
 	{
 		//cj_debug(param);
 	}
 
 	{//smart nic
-		socket_send_test(param);
+		// socket_send_test(param);
+		// sleep(3);
+		// start_cmd_control(param.controller);
+	}
+	
+	{
+		mpi_allreduce(param);
 		sleep(3);
 		start_cmd_control(param.controller);
 	}
-	
 
 	{
-	//pressure test code
+	//pressure test code  test fpga rd gpu memory speed
 	// ofstream outfile;
-	// int burst =1024;
-	// int ops =50000;
-	// for(int i=0;i<11;i++){
+	// int burst =2*1024*1024;
+	// int ops =50;
+	// for(int i=0;i<1;i++){
 	// 	pressure_test(param,burst,ops,2);
-	// 	burst*=2;
 	// }
 	// outfile.open("data.txt", ios::out |ios::app );
 	// outfile<<endl;
@@ -177,12 +193,9 @@ int main(int argc, char *argv[]) {
 	// for(int i=0;i<8;i++){
 	// 	a[i]=i;
 	// }
-
-
     fpga::XDMA::clear();
     close_device();
 	return 0;
-
 }
 
 void set_page_table(){
@@ -284,14 +297,11 @@ void copy_to_cpu(){
 }
 void close_device(){
 	size_t size = (gpu_mem_size + GPU_PAGE_SIZE - 1) & GPU_PAGE_MASK;
-	if(SHOWINFO){
-		cout << "unmapping buffer" << endl;
-	}
+	cjinfo("unmapping buffer\n" );
+
 	ASSERT_EQ(gdr_unmap(g, mh, map_d_ptr, size), 0);
 	ASSERT_EQ(gdr_unpin_buffer(g, mh), 0);
-	if(SHOWINFO){
-		cout << "closing gdrdrv" << endl;
-	}
+	cjinfo("closing gdrdrv\n" );
 	ASSERT_EQ(gdr_close(g), 0);
 	ASSERTDRV(gpuMemFree(d_A));
 	ASSERTDRV(cuDevicePrimaryCtxRelease(dev));

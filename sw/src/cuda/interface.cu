@@ -7,171 +7,13 @@
 #include "tool/log.hpp"
 
 using namespace std;
-ofstream outfile;
-__global__ void GlobalCopy(int *out, const int *in, size_t N )
-{
-    int temp[16];
-	N=size_t(N/4);
-	//avoid accessing cache, assure cold-cache access
-	int start = (blockIdx.x * blockDim.x + threadIdx.x);
-    int step = (blockDim.x * gridDim.x);
-	int i;
-
-    for ( i = start; i < N; i += step*1 ) {
-        for ( int j = 0; j <1; j++ ) {
-            // int index = i;//+j*blockDim.x;;
-            temp[j] += in[i + j*step];
-        }
-    }
-    for(int j=0;j<1;j++){
-        out[j] = temp[j];
-    }
-    
-}
-
-
-
-__global__ void gpu_pressure(volatile unsigned int *data_addr,int iter,size_t block_length,unsigned int *out){
-	int index = blockIdx.x*blockDim.x+threadIdx.x;
-	size_t op_num = size_t(block_length/sizeof(int));
-	int total_threads = blockDim.x*gridDim.x;
-	size_t iter_num = size_t(op_num/total_threads);
-	clock_t s,e;
-
-	for(size_t i=0;i<iter_num;i++){
-		data_addr[total_threads*i+index] = 1;
-	}
-	out[index]=0;
-	BEGIN_SINGLE_THREAD_DO
-		cjdebug("###########gpu move start! total_threads:%d  opnum:%ld  iter_num:%d\n",total_threads,op_num,iter_num);
-		s = clock64();
-	END_SINGLE_THREAD_DO
-
-	
-	for(int it=0;it<iter;it++){
-		for(size_t i=0;i<iter_num;i++){
-			out[index]+=data_addr[total_threads*i+index];
-		}
-	}
-
-	
-	BEGIN_SINGLE_THREAD_DO
-		e = clock64();
-		float time = (e-s)/1.41/1e9;
-		float speed = 1.0*block_length*iter/1024/1024/1024/time;
-		cjdebug("e-s:%ld  time=%f speed=%f GB/s \n",e-s,time,speed);
-	END_SINGLE_THREAD_DO
-}
-
-void gpu_benchmark(param_test_t param_in,int burst,int ops,int start){
-	sleep(1);
-	fpga::XDMAController* controller = param_in.controller;
-
-	unsigned long tlb_start_addr_value = (unsigned long)param_in.tlb_start_addr;
-	controller->writeReg(32,(unsigned int)tlb_start_addr_value);
-	controller->writeReg(33,(unsigned int)(tlb_start_addr_value>>32));
-
-	unsigned int* recv_tlb_start_addr = param_in.tlb_start_addr+int((100*1024*1024)/sizeof(int));
-	unsigned long recv_tlb_start_addr_value = (unsigned long)recv_tlb_start_addr;
-	controller->writeReg(34,(unsigned int)recv_tlb_start_addr_value);
-	controller->writeReg(35,(unsigned int)(recv_tlb_start_addr_value>>32));
-
-	cout<<"start fpga workload\n";
-	int rd_sum,wr_sum;
-	float rd_speed,wr_speed;
-	int total_length = 100*1024*1024 ;
-
-	controller ->writeReg(36,total_length);
-	controller ->writeReg(37,ops);
-	controller ->writeReg(38,burst);
-	controller ->writeReg(39,0);
-	controller ->writeReg(39,start);
-	sleep(10);
-  	controller ->writeReg(39,0);
-	
-	
-	rd_sum = controller ->readReg(577);
-	wr_sum = controller ->readReg(576);
-	// cout << "wr_sum: " << wr_sum <<endl; 
-  	// cout << "rd_sum: " << rd_sum <<endl;
-	wr_speed = 1.0*burst*ops*250/wr_sum/1000;
-	rd_speed = 1.0*burst*ops*250/rd_sum/1000;
-	cout<<"busrt:"<<burst<<" ops:"<<ops<<" mode:"<<start<<endl;
-	
-	
-	if(start==2){//read
-		cout << " dma_read_cmd_counter0: " <<controller -> readReg(525) <<endl;
-		cout <<  std::dec << "rd_speed: " << rd_speed << " GB/s" << endl;
-		outfile<<rd_speed<<endl;
-	}
-	if(start==1){//write
-		cout << " dma_write_cmd_counter1: " <<controller ->readReg(522) <<endl;
-		cout <<  std::dec << "wr_speed: " << wr_speed << " GB/s" << endl;
-		outfile<<wr_speed<<endl;
-	}
-	if(start==3){
-		cout << " dma_read_cmd_counter0: " <<controller -> readReg(525) <<endl;
-		cout << " dma_write_cmd_counter1: " <<controller ->readReg(522) <<endl;
-		cout <<  std::dec << "wr_speed: " << wr_speed << " GB/s" << endl;
-		cout <<  std::dec << "rd_speed: " << rd_speed << " GB/s" << endl;
-		outfile<<wr_speed<<" "<<rd_speed<<endl;
-	}
-	outfile.close();
-}
-void pressure_test(param_test_t param_in,int burst,int ops,int start){
-	outfile.open("data.txt", ios::out |ios::app );
-	int blocks=2048;
-	int threads=1024;
-	int total=blocks*threads;
-	unsigned int * out;
-	unsigned int * out_cpu = new unsigned int[total];
-	cudaMalloc(&out,sizeof(unsigned int)*total);
-
-	double elapsedTime;
-	struct timeval t_start, t_end;
-    gettimeofday(&t_start,NULL);
-
-	int iter = 50000;
-	size_t buffer_size = 200*1024*1024;
-	gpu_pressure<<<blocks,threads>>>((unsigned int *)param_in.map_d_ptr,iter,buffer_size,out);
-	// for(int i=0;i<50000;i++){
-	// 	GlobalCopy<<<blocks,threads>>>((int *)out,(int *)param_in.map_d_ptr,200*1024*1024);
-	// }
-	
-	gpu_benchmark(param_in,burst,ops,start);
-	cudaThreadSynchronize();
-	cudaError_t cudaerr = cudaPeekAtLastError();
-    if (cudaerr != cudaSuccess)
-        printf("kernel launch failed with error \"%s\".\n",
-               cudaGetErrorString(cudaerr));
-	gettimeofday(&t_end,NULL);
-	elapsedTime =  t_end.tv_sec - t_start.tv_sec + (t_end.tv_usec - t_start.tv_usec)/1000000.0;
-	cout<<"Time:"<<elapsedTime<<endl;
-	cout<<"speed"<<1.0*iter*buffer_size/elapsedTime/1024/1024/1024 << endl;
-	
-	// cudaMemcpy(out_cpu,out,sizeof(unsigned int)*total,cudaMemcpyDeviceToHost);
-	// for(int i=0;i<16;i++){
-	// 	cout<<out_cpu[i]<<" ";
-	// }
-	// for(int i=0;i<total;i++){
-	// 	if(out_cpu[i]!=out_cpu[0]){
-	// 		cout<<"error at:"<<i<<" value:"<<out_cpu[i]<<endl;
-	// 		break;
-	// 	}
-	// }
-	cjdebug("###########gpu move done!\n");
-	cout<<endl<<endl;
-}
 
 void socket_sample(param_interface_socket_t param_in){
 	socket_context_t* context = get_socket_context(param_in.buffer_addr,param_in.tlb_start_addr,param_in.controller);
 
 	int * data;
-	size_t total_data_length = 2*256*1024*1024;
+	size_t total_data_length = size_t(1)*1024*1024*1024;
 	cudaMalloc(&data,total_data_length);
-
-	size_t * swap_data;
-	cudaMallocManaged(&swap_data,300*sizeof(size_t));
 
 	sock_addr_t addr;
 	addr.ip = param_in.ip;
@@ -189,43 +31,48 @@ void socket_sample(param_interface_socket_t param_in){
 	connection_t* connection2;
 	cudaMalloc(&connection2,sizeof(connection_t));
 
-	cudaStream_t stream;
-	cudaStreamCreate(&stream);
+	cudaStream_t stream1,stream2;
+	cudaEvent_t event1,event2;
+	cudaStreamCreate(&stream1);
+	cudaStreamCreate(&stream2);
+	cudaEventCreate(&event1);
+	cudaEventCreate(&event2);
 	sleep(1);
 	cjprint("start user code:\n");
 
 	int verify_data_offset = 5;
-	int transfer_data_length = 2*1024*1024;
+	size_t transfer_data_length = size_t(500)*1024*1024;
 	param_in.controller->writeReg(165,(unsigned int)(transfer_data_length/64));//count code
 	param_in.controller->writeReg(183,(unsigned int)(transfer_data_length/64));
 	if(app_type==0){
 		//client code
-		create_socket<<<1,1,0,stream>>>(context,socket1);
-		compute<<<1,1024,0,stream>>>(data,total_data_length,verify_data_offset);
-		connect<<<1,1,0,stream>>>(context,socket1,addr);
-		socket_send<<<1,1024,0,stream>>>(context,socket1,data,transfer_data_length);
+		create_socket<<<1,1,0,stream1>>>(context,socket1);
+		compute<<<1,1024,0,stream1>>>(data,total_data_length,verify_data_offset);
+		connect<<<1,1,0,stream1>>>(context,socket1,addr);
+		socket_send<<<1,1024,0,stream1>>>(context,socket1,data,transfer_data_length);
+		//socket_send<<<1,1024,0,stream1>>>(context,socket1,data,transfer_data_length/2);
+		//socket_send<<<1,1024,0,stream1>>>(context,socket1,data+(transfer_data_length/2/4),transfer_data_length/2);
 		//socket_close<<<1,1,0,stream>>>(context,socket1);
-		// create_socket<<<1,1,0,stream>>>(context,socket2);
-		// connect<<<1,1,0,stream>>>(context,socket2,addr);
-		// socket_send<<<1,8,0,stream>>>(context,socket2,data,transfer_data_length);
 	}else if(app_type==1){
 		//server code
-		create_socket<<<1,1,0,stream>>>(context,socket1);
-		socket_listen<<<1,1,0,stream>>>(context,socket1,1235);
-		accept<<<1,1,0,stream>>>(context,socket1,connection1);
-		socket_recv<<<1,1024,0,stream>>>(context,connection1,data,transfer_data_length,swap_data);
-		verify<<<1,1,0,stream>>>(data,transfer_data_length,verify_data_offset);
+		create_socket<<<1,1,0,stream1>>>(context,socket1);
+		socket_listen<<<1,1,0,stream1>>>(context,socket1,1235);
+		accept<<<1,1,0,stream1>>>(context,socket1,connection1);
+		cudaEventRecord(event1, stream1);
+		cudaStreamWaitEvent(stream2, event1,0);
+		socket_recv<<<4,1024,0,stream1>>>(context,connection1,data,transfer_data_length);
+		socket_recv_ctrl<<<1,16,0,stream2>>>(context,connection1,data,transfer_data_length);
+		// cudaError_t cudaerr = cudaDeviceSynchronize();
+		// ErrCheck(cudaerr);
+		cudaEventRecord(event2, stream2);
+		cudaStreamWaitEvent(stream1, event2,0);
+		verify<<<1,1,0,stream1>>>(data,transfer_data_length,verify_data_offset);
 
 		// cudaError_t cudaerr = cudaDeviceSynchronize();
 		// ErrCheck(cudaerr);
 		// sleep(10);
-		// for(int i=0;i<16;i++){
-		// 	printf("%ld %ld %ld\n",swap_data[i],swap_data[i+50],swap_data[i+100]);
-		// }
+
 		//socket_close<<<1,1,0,stream>>>(context,connection1);
-		// accept<<<1,1,0,stream>>>(context,socket1,connection2);
-		// socket_recv<<<1,8,0,stream>>>(context,connection2,data,transfer_data_length);
-		// verify<<<1,1,0,stream>>>(data,transfer_data_length,verify_data_offset);
 	}else{
 		cjerror("app_type not set!\n");
 	}

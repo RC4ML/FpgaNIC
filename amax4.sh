@@ -27,7 +27,7 @@ expect "]*"
 send "make\n"
 expect eof
 expect eof
-send "sudo ./dma-example -t server\n"
+send "sudo ./dma-example -t server -n 4\n"
 expect "]*"
 send $pass
 interact
