@@ -15,7 +15,7 @@
 
 
 
-socket_context_t* get_socket_context(unsigned int *dev_buffer,unsigned int *tlb_start_addr,fpga::XDMAController* controller);//check
+socket_context_t* get_socket_context(unsigned int *dev_buffer,unsigned int *tlb_start_addr,fpga::XDMAController* controller,int node_type);//check
 
 __global__ void create_socket(socket_context_t* ctx,int* socket);//check
 
@@ -48,7 +48,7 @@ __device__ int enroll(socket_context_t* ctx,int socket_id,int *data_addr,size_t 
 
 __device__ void write_bypass(volatile unsigned int *dev_addr,unsigned int *data);
 
-__device__ void read_info(socket_context_t* ctx);
+__device__ int read_info(socket_context_t* ctx);
 
 __device__ int get_empty_buffer(socket_context_t* ctx);
 

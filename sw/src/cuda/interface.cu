@@ -1,6 +1,7 @@
 #include "interface.cuh"
 #include "kernel.cuh"
 #include "network.cuh"
+#include "inference_util.cuh"
 #include "sys/time.h"
 #include <fstream>
 #include <iostream>
@@ -9,7 +10,7 @@
 using namespace std;
 
 void socket_sample(param_interface_socket_t param_in){
-	socket_context_t* context = get_socket_context(param_in.buffer_addr,param_in.tlb_start_addr,param_in.controller);
+	socket_context_t* context = get_socket_context(param_in.buffer_addr,param_in.tlb_start_addr,param_in.controller,0);
 
 	int * data;
 	size_t total_data_length = size_t(1)*1024*1024*1024;

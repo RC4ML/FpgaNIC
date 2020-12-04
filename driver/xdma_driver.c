@@ -893,7 +893,7 @@ map_bars(struct dev_inst *inst, struct pci_dev *dev) {
             continue;
         } else if(bar_len < 0) {
             rc = -1;
-            goto fail;
+            goto xdma_map_fail;
         }
 
         /* Try to identify BAR as XDMA control BAR */
@@ -912,14 +912,14 @@ map_bars(struct dev_inst *inst, struct pci_dev *dev) {
     if(inst->config_bar_idx < 0) {
         printk(KERN_INFO "Failed to detect XDMA config BAR\n");
         rc = -1;
-        goto fail;
+        goto xdma_map_fail;
     }
 
     identify_bars(inst, bar_id_list, bar_id_idx, config_bar_pos);
 
     /* successfully mapped all required BAR regions */
     return 0;
-fail:
+xdma_map_fail:
     /* unwind; unmap any BARs that we did map */
     unmap_bars(inst, dev);
     return rc;

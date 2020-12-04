@@ -26,7 +26,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <cuda.h>
-#include <check.h>
+// #include <check.h>  will cause compile error
 #include <map>
 #include <gdrapi.h>
 
@@ -105,11 +105,11 @@ START_TEST(__testname) {                                                \
         } while (0)
 
 #define ASSERT_EQ(P, V) ASSERT((P) == (V))
-#define CHECK_EQ(P, V) ASSERT((P) == (V))
+// #define CHECK_EQ(P, V) ASSERT((P) == (V))
 #define ASSERT_NEQ(P, V) ASSERT(!((P) == (V)))
 #define BREAK_IF_NEQ(P, V) if((P) != (V)) break
-#define BEGIN_CHECK do
-#define END_CHECK while(0)
+// #define BEGIN_CHECK do
+// #define END_CHECK while(0)
 
 
 namespace gdrcopy {

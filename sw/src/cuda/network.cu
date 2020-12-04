@@ -57,10 +57,10 @@ __global__ void accept(socket_context_t* ctx,int* socket,connection_t* connectio
 			ctx->is_accepting		=	1;
 			cjprint("accepting!\n");
 			while(ctx->accepted==0){
-				#if SLOW_DEBUG
-					cjdebug("accepting!\n");
-					cu_sleep(1);
-				#endif
+				// #if SLOW_DEBUG
+				// 	cjdebug("accepting!\n");
+				// 	cu_sleep(1);
+				// #endif
 			}
 			//todo
 			int buffer_id							=	connection->buffer_id;
@@ -129,6 +129,7 @@ __global__ void connect(socket_context_t* ctx,int *socket,sock_addr_t addr){
 				ctx->send_write_count[buffer_id]	=	0;
 				ctx->recv_read_count[buffer_id]		=	0;
 				ctx->recv_package_count[buffer_id]	=	0;
+				cu_sleep(2);
 				cjprint("socket:%d connect success with session_id:%d\n",socket_id,session_id);
 				return;
 			}
@@ -138,7 +139,7 @@ __global__ void connect(socket_context_t* ctx,int *socket,sock_addr_t addr){
 
 
 
-socket_context_t* get_socket_context(unsigned int *dev_buffer,unsigned int *tlb_start_addr,fpga::XDMAController* controller){
+socket_context_t* get_socket_context(unsigned int *dev_buffer,unsigned int *tlb_start_addr,fpga::XDMAController* controller,int node_type){
 	controller ->writeReg(0,0);
 	controller ->writeReg(0,1);
 	sleep(1);//reset
@@ -211,7 +212,7 @@ socket_context_t* get_socket_context(unsigned int *dev_buffer,unsigned int *tlb_
 	registers.recv_read_count_bypass_reg		=	map_reg_64(2,controller);
 
 	//attention 
-	send_kernel<<<1,1,0,stream_send>>>(ctx,dev_buffer,registers);//0-2 info  2-102 send buffer
+	send_kernel<<<1,1,0,stream_send>>>(ctx,dev_buffer,registers,node_type);//0-2 info  2-102 send buffer
 	return ctx;
 }
 
@@ -329,7 +330,7 @@ __device__ void write_bypass(volatile unsigned int *dev_addr,unsigned int *data)
 	__syncthreads();
 }
 
-__device__ void read_info(socket_context_t* ctx){
+__device__ int read_info(socket_context_t* ctx){
 	int offset = ctx->info_offset;
 	if(ctx->info_buffer[offset+0] > ctx->info_count){
 		ctx->info_offset+=16;//++512 bit
@@ -379,6 +380,9 @@ __device__ void read_info(socket_context_t* ctx){
 		}else if(info_type==1){//close
 
 		}
+		return 1;
+	}else{
+		return 0;
 	}
 }
 

@@ -15,19 +15,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "main.h"
+#include "tool/log.hpp"
 #include "common.hpp"
+#include "cuda/inference.cuh"
 #include "cuda/interface.cuh"
 #include "cuda/util.cuh"
 #include "cuda/test.cuh"
 #include "cuda/app.cuh"
+
+// #include "cuda/cu_torch.cuh"
+
+
 #include "tool/test.hpp"
 #include "tool/input.hpp"
 #include <fstream>
 #include <iostream>
-#include "tool/log.hpp"
+
 extern "C"
+
 void useCUDA();
 void write(void* addr);
 using namespace std;
@@ -149,7 +155,13 @@ int main(int argc, char *argv[]) {
 	}
 	
 	{
-		mpi_allreduce(param);
+		// mpi_allreduce(param);
+		// sleep(3);
+		// start_cmd_control(param.controller);
+	}
+
+	{
+		inference_sample(param);
 		sleep(3);
 		start_cmd_control(param.controller);
 	}

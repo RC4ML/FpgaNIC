@@ -15,3 +15,13 @@ def fpga(cycles,length):
 
 amax4(69248475,500)
 
+def ms_amax6(a,b):
+	t=(b-a)/1.77/1e6
+	print("ms",abs(t))
+def ms_amax4(a,b):
+	t=(b-a)/1.41/1e6
+	print("ms",abs(t))
+
+ms_amax6(18496590653,18497381872)
+ms_amax4(14063264046,14084028421)
+ms_amax6(18422549016,18421729120)

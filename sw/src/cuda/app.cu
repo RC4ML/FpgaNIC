@@ -24,8 +24,7 @@ int *data_recv;
 volatile int *wr;
 volatile int *rd;
 
-void *start_routine(void *arg)
-{
+void *start_routine(void *arg){
 	RunConfig cfg = RunConfig();
 
 
@@ -70,7 +69,7 @@ void *start_routine(void *arg)
 void mpi_allreduce(param_test_t param_in){
 	RunConfig cfg = RunConfig();
 	unsigned int* buffer_addr =  ((unsigned int*)param_in.map_d_ptr);
-	context = get_socket_context(buffer_addr,param_in.tlb_start_addr,param_in.controller);
+	context = get_socket_context(buffer_addr,param_in.tlb_start_addr,param_in.controller,0);
 	
 	size_t total_data_length = single_data_length*cfg.total_node;
 	cudaMalloc(&data_gpu,total_data_length);
