@@ -18,11 +18,12 @@
 #include "main.h"
 #include "tool/log.hpp"
 #include "common.hpp"
-#include "cuda/inference.cuh"
+// #include "cuda/inference.cuh"
 #include "cuda/interface.cuh"
 #include "cuda/util.cuh"
 #include "cuda/test.cuh"
 #include "cuda/app.cuh"
+#include "cuda/hll.cuh"
 
 // #include "cuda/cu_torch.cuh"
 
@@ -161,7 +162,13 @@ int main(int argc, char *argv[]) {
 	}
 
 	{
-		inference_sample(param);
+		// inference_sample(param);
+		// sleep(3);
+		// start_cmd_control(param.controller);
+	}
+
+	{
+		hll_sample(param);
 		sleep(3);
 		start_cmd_control(param.controller);
 	}

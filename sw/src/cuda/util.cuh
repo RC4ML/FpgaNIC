@@ -63,6 +63,11 @@ __device__ void unlock(int *mutex);
 
 __device__ int cu_sleep(double seconds);
 
+__device__ unsigned long MurMurHash3(unsigned int * key);
+
+__device__ void hll(volatile unsigned int *data,int *mem);
+
+__global__ void hll_test(int *data,int *mem);
 typedef	struct sock_addr{
 		int ip;
 		int mac;
@@ -143,6 +148,8 @@ typedef struct socket_context{
 	int info_offset;
 	int info_count;
 
+	int * hll_mem;
+
 	volatile unsigned int* send_buffer;//check
 	volatile unsigned int* recv_buffer;//check
 	volatile unsigned int* info_buffer;//check
@@ -158,6 +165,8 @@ typedef struct socket_context{
 	connection_t connection_tbl[1024];
 	
 	int mutex;//check
+
+	volatile int mutex_sender;
 
 	//registers write
 

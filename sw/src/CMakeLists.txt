@@ -7,9 +7,9 @@ SET(CMAKE_CXX_COMPILER "/usr/bin/g++-6")
 
 project (dma-example LANGUAGES CXX CUDA)
 
-set(CMAKE_PREFIX_PATH "~/cj/libtorch")
-find_package(Torch REQUIRED)
-
+#set(CMAKE_PREFIX_PATH "~/cj/libtorch")
+#find_package(Torch REQUIRED)
+find_package(CUDA)
 
 SET(CUDA_SEPARABLE_COMPILATION ON)#do not add this line above the find package
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
@@ -42,17 +42,19 @@ CUDA_ADD_EXECUTABLE(dma-example
 	cuda/network_kernel.cu
 	cuda/test.cu
 	cuda/app.cu
-	cuda/inference.cu
-	cuda/inference_util.cu
+	cuda/hll.cu
 	tool/test.cpp
 	tool/input.cpp
 	tool/log.cpp
     )
+#	cuda/inference.cu
+#	cuda/inference_util.cu
 target_link_libraries(dma-example
-	${TORCH_LIBRARIES}
+	cuda
 	pthread
 	gdrapi
     )
+#${TORCH_LIBRARIES}
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
 
 

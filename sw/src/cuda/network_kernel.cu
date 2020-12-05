@@ -31,8 +31,9 @@ __global__ void socket_close(socket_context_t* ctx,connection_t* connection){
 __device__ void _socket_send(socket_context_t* ctx,int buffer_id,int * data_addr,size_t length){
 	__shared__ unsigned int block_length;
 	__shared__ int session_id;
-	int cnt=0;
-
+	int block_id = blockIdx.x;
+	int index = blockIdx.x*blockDim.x+threadIdx.x;
+	int total_threads = blockDim.x;
 	BEGIN_SINGLE_THREAD_DO
 		session_id = ctx->buffer_info[buffer_id].session_id;
 	END_SINGLE_THREAD_DO
@@ -52,10 +53,19 @@ __device__ void _socket_send(socket_context_t* ctx,int buffer_id,int * data_addr
 					while(1);
 				};
 			}//stuck if space not enough
-			//
+			
 		END_SINGLE_THREAD_DO
 		// parallel move data code
-		move_data_to_send_buffer(ctx,buffer_id,block_length,data_addr);
+		//move_data_to_send_buffer(ctx,buffer_id,block_length,data_addr);
+		int op_num = int(block_length/sizeof(int));
+		int iter_num = int(op_num/total_threads);
+		int addr_base_offset = SINGLE_BUFFER_LENGTH*buffer_id+ctx->send_buffer_offset[buffer_id];//base offset in bytes
+		addr_base_offset = int(addr_base_offset/sizeof(int));
+		{//move code
+			for(int i=0;i<iter_num;i++){
+				ctx->send_buffer[addr_base_offset+total_threads*i+index]		=	data_addr[total_threads*i+index];
+			}
+		}
 		data_addr+=int(block_length/sizeof(int));
 		
 		//inform code
@@ -93,7 +103,7 @@ __global__ void socket_send(socket_context_t* ctx,int* socket,int * data_addr,si
 	BEGIN_SINGLE_THREAD_DO
 		cjinfo("function socket_send called!\n");
 		size_t t = clock64();
-		cjprint("send t= %ld\n",t);
+		//cjprint("send t= %ld\n",t);
 		int socket_id = *socket;
 		if(false==check_socket_validation(ctx,socket_id)){
 			cjerror("socket %d does not exists!\n",socket_id);
@@ -118,7 +128,7 @@ __global__ void socket_send(socket_context_t* ctx,connection_t* connection,int *
 	BEGIN_SINGLE_THREAD_DO
 		cjdebug("function socket_send connection type called!\n");
 		size_t t = clock64();
-		cjprint("send t= %ld\n",t);
+		//cjprint("send t= %ld\n",t);
 		if(connection->valid==0){
 			cjerror("connection is not valid!\n");
 			return;
@@ -157,8 +167,8 @@ __device__ void _socket_recv_data(socket_context_t* ctx,int buffer_id,int * data
 
 	BEGIN_BLOCK_ZERO_DO
 		cjinfo("enter recv data function!\n");
-		size_t t=clock64();
-		cjprint("_socket_recv_data start t= %ld  blockid=%d\n",t,block_id);
+		// size_t t=clock64();
+		// cjprint("_socket_recv_data start t= %ld  blockid=%d\n",t,block_id);
 	END_BLOCK_ZERO_DO
 	while(1){
 		BEGIN_BLOCK_ZERO_DO
@@ -174,7 +184,7 @@ __device__ void _socket_recv_data(socket_context_t* ctx,int buffer_id,int * data
 			}
 			if(flag==1){
 				s=clock64();
-				cjprint("_socket_recv_data see 1st pkg t= %ld\n",s);
+				// cjprint("_socket_recv_data see 1st pkg t= %ld\n",s);
 				flag=0;
 			}
 			//printf("block_id:%d cur_index:%d  wr:%d\n",block_id,cur_index,ctx->recv_fifo_wr[buffer_id]);
@@ -194,6 +204,7 @@ __device__ void _socket_recv_data(socket_context_t* ctx,int buffer_id,int * data
 		END_BLOCK_ZERO_DO
 		s3[index3]=clock64();
 		for(int i=0;i<iter_num;i++){
+			//hll(ctx->recv_buffer+(addr_base_offset+total_threads*i+index),ctx->hll_mem);
 			data_addr[total_threads*i+index]	=	ctx->recv_buffer[addr_base_offset+total_threads*i+index];
 			//ctx->recv_buffer[addr_base_offset+total_threads*i+index]	=	0;
 		}
@@ -214,12 +225,25 @@ __device__ void _socket_recv_data(socket_context_t* ctx,int buffer_id,int * data
 	BEGIN_BLOCK_ZERO_DO
 		if(cur_length==length){
 			size_t t= clock64();
-			cjprint("recv done t= %ld blockid=%d\n",t,block_id);
+			//cjprint("recv done t= %ld blockid=%d\n",t,block_id);
 			cjdebug("data recv done! %ld speed: %f\n",e-s,1.0*length/1024/1024/1024/((e-s)/1.41/1e9));
 		}else if(cur_length>length){
 			cjerror("data recv done,but data is a little bit more!\n");
 		};
 	END_BLOCK_ZERO_DO
+
+	//	hll
+	// BEGIN_SINGLE_THREAD_DO
+	// 	for(int i=0;i<32;i++){
+	// 		printf("%d\n",ctx->hll_mem[i]);
+	// 	}
+	// 	double s=0;
+	// 	for(int i=0;i<65536;i++){
+	// 		s += 1.0/(exp2((double)(ctx->hll_mem[i])));
+	// 	}
+	// 	double dv = 0.7213*65536*65536/(s);
+	// 	printf("dv:%f\n",dv);
+	// END_SINGLE_THREAD_DO
 }
 
 __global__ void socket_recv_ctrl(socket_context_t* ctx,int* socket,int * data_addr,size_t length){
@@ -275,8 +299,8 @@ __device__ void _socket_recv_ctrl(socket_context_t* ctx,int buffer_id,int * data
 		cur_length=0;
 		flow_control_flag=0;
 		cjinfo("enter recv ctrl _function!\n");
-		size_t t=clock64();
-		cjprint("_socket_recv_ctrl start t= %ld\n",t);
+		// size_t t=clock64();
+		// cjprint("_socket_recv_ctrl start t= %ld\n",t);
 
 		session_id = ctx->buffer_info[buffer_id].session_id;
 		threshold = (unsigned long)(SINGLE_BUFFER_LENGTH*FLOW_CONTROL_RATIO*(ctx->buffer_read_count_record[buffer_id]));
@@ -303,7 +327,7 @@ __device__ void _socket_recv_ctrl(socket_context_t* ctx,int buffer_id,int * data
 			}
 			if(flag==1){
 				s=clock64();
-				cjprint("_socket_recv_ctrl see 1st head t= %ld\n",s);
+				// cjprint("_socket_recv_ctrl see 1st head t= %ld\n",s);
 				flag=0;
 			}
 			block_length = ctx->recv_buffer[offset+1];
@@ -342,18 +366,14 @@ __device__ void _socket_recv_ctrl(socket_context_t* ctx,int buffer_id,int * data
 			block_length = block_length-128;
 			int wr_index = ctx->recv_fifo_wr[buffer_id];
 			int wr_index_mod = wr_index%16;
-			clock_start=clock64();
-			// while(	wr_index - ctx->recv_fifo_rd[buffer_id][0]==16 	||\
-			// 		wr_index - ctx->recv_fifo_rd[buffer_id][1]==16	||\
-			// 		wr_index - ctx->recv_fifo_rd[buffer_id][2]==16	||\
-			// 		wr_index - ctx->recv_fifo_rd[buffer_id][3]==16	  
-			while(	wr_index - ctx->recv_fifo_rd[buffer_id][0]==16 	\
-			 ){
-				//cjdebug("waiting rd, bufferId:%d rd0:%d rd1:%d wr:%d\n",buffer_id,ctx->recv_fifo_rd[buffer_id][0],ctx->recv_fifo_rd[buffer_id][1],wr_index);
-				// cu_sleep(0.01);
-				if(clock64()-clock_start > size_t(15000000000L)){
-					cjprint("timeout at data\n");
-					while(1);
+			for(int i=0;i<4;i++){//num blocks
+				clock_start=clock64();
+				while(wr_index - ctx->recv_fifo_rd[buffer_id][i]==16){
+					if(clock64()-clock_start > size_t(15000000000L)){
+						cjprint("timeout at data\n");
+						//cjdebug("waiting rd, bufferId:%d rd0:%d rd1:%d wr:%d\n",buffer_id,ctx->recv_fifo_rd[buffer_id][0],ctx->recv_fifo_rd[buffer_id][1],wr_index);
+						while(1);
+					}
 				}
 			}
 			ctx->recv_fifo_addr_offset[buffer_id][wr_index_mod] = int((SINGLE_BUFFER_LENGTH*buffer_id+ctx->recv_buffer_offset[buffer_id])/4);
@@ -394,7 +414,7 @@ __device__ void _socket_recv_ctrl(socket_context_t* ctx,int buffer_id,int * data
 	}
 	BEGIN_SINGLE_THREAD_DO
 	if(cur_length==length){
-		cjdebug("ctrl recv done! %ldcycles length=%fM\n",e-s,1.0*length/1024/1024);
+		cjdebug("ctrl recv done! %ld cycles length=%fM\n",e-s,1.0*length/1024/1024);
 	}else if(cur_length>length){
 		cjerror("ctrl recv done,but data is a little bit more!\n");
 	};
