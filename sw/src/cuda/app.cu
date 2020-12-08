@@ -18,7 +18,7 @@
 using namespace std;
 
 socket_context_t* context;
-size_t single_data_length = size_t(500)*1024*1024;
+size_t single_data_length = size_t(64)*1024*1024;
 int *data_gpu;
 int *data_recv;
 volatile int *wr;
@@ -47,6 +47,7 @@ void *start_routine(void *arg){
 		all_reduce_wait<<<1,1,0,stream_send>>>(wr,rd);
 		int offset = int(part_index*single_data_length/sizeof(int));
 		cjprint("allreduce send, offset=%d\n",offset);
+		socket_send_pre<<<1,1,0,stream_send>>>(context,socket1,single_data_length);
 		socket_send<<<1,1024,0,stream_send>>>(context,socket1,data_gpu+offset,single_data_length);
 		part_index--;
 		if(part_index<0){
@@ -57,12 +58,14 @@ void *start_routine(void *arg){
 		all_reduce_wait<<<1,1,0,stream_send>>>(wr,rd);
 		int offset = int(part_index*single_data_length/sizeof(int));
 		cjprint("allreduce send, offset=%d\n",offset);
+		socket_send_pre<<<1,1,0,stream_send>>>(context,socket1,single_data_length);
 		socket_send<<<1,1024,0,stream_send>>>(context,socket1,data_gpu+offset,single_data_length);
 		part_index--;
 		if(part_index<0){
 			part_index+=cfg.total_node;
 		}
 	}
+	//socket_close<<<1,1,0,stream_send>>>(context,socket1);
 	cjprint("send thread done!\n");
 }
 
@@ -133,6 +136,7 @@ void mpi_allreduce(param_test_t param_in){
 		}
 	}
 	all_reduce_verify_data<<<1,1,0,stream1>>>(data_gpu,total_data_length);
+	//socket_close<<<1,1,0,stream1>>>(context,connection1);
 
 	
 }

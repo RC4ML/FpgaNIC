@@ -17,8 +17,8 @@
 #define PACKAGE_LENGTH_512 2048
 //64 bytes 256=16K
 
-#define TOKEN_SPEED 1
-//26:9.85GB/s 25:10.24GB/s 24:10.67GB/s 23:11.13GB/s
+#define TOKEN_SPEED 22
+//26:9.85GB/s 25:10.24GB/s 24:10.67GB/s 23:11.13GB/s   //22 ok for two a100
 
 #define SINGLE_BUFFER_LENGTH 25*1024*1024
 #define TOTAL_BUFFER_LENGTH 100*1024*1024
@@ -167,6 +167,11 @@ typedef struct socket_context{
 	int mutex;//check
 
 	volatile int mutex_sender;
+
+	size_t	pre_data_offset[8192];
+	int		pre_buffer_offset_bytes[8192];
+	int 	pre_length[8192];
+	int		pre_pkg_cnt;
 
 	//registers write
 

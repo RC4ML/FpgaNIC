@@ -156,9 +156,9 @@ int main(int argc, char *argv[]) {
 	}
 	
 	{
-		// mpi_allreduce(param);
-		// sleep(3);
-		// start_cmd_control(param.controller);
+		mpi_allreduce(param);
+		sleep(3);
+		start_cmd_control(param.controller);
 	}
 
 	{
@@ -168,9 +168,9 @@ int main(int argc, char *argv[]) {
 	}
 
 	{
-		hll_sample(param);
-		sleep(3);
-		start_cmd_control(param.controller);
+		// hll_sample(param);
+		// sleep(3);
+		// start_cmd_control(param.controller);
 	}
 
 	{

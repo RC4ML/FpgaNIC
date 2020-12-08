@@ -19,7 +19,7 @@ def ms_amax4(a,b):
 
 
 
-fpga(0x416bbc3,2048)
+fpga(0x6c6f5,20)
 
 
 # ms_amax6(18496590653,18497381872)

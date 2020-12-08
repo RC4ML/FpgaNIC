@@ -38,8 +38,9 @@ class RunConfig{
 				valid_tbl[i]=0;
 			}
 
+			valid_tbl[3]=1;
 			valid_tbl[4]=1;
-			valid_tbl[6]=1;
+			//valid_tbl[6]=1;
 
 			total_node = accumulate(valid_tbl,valid_tbl+MAX_MACHINE,0);
 			if(valid_tbl[node_index] == false){

@@ -322,7 +322,7 @@ __device__ bool check_socket_validation(socket_context_t* ctx,int socket){
 
 
 __device__ void write_bypass(volatile unsigned int *dev_addr,unsigned int *data){
-	int index = blockIdx.x*blockDim.x+threadIdx.x;
+	int index = threadIdx.x;
 	__syncthreads();
 	if(index<16){
 		dev_addr[index] = data[index];	

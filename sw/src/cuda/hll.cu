@@ -41,7 +41,7 @@ void hll_sample(param_test_t param_in){
 
 	cjprint("start user code:\n");
 	int verify_data_offset = 5;
-	size_t transfer_length = size_t(512)*1024*1024*4;
+	size_t transfer_length = size_t(50)*1024*1024*4;
 	param_in.controller->writeReg(165,(unsigned int)(transfer_length/64));//count code
 	param_in.controller->writeReg(183,(unsigned int)(transfer_length/64));
 	if(app_type==0){
@@ -52,7 +52,8 @@ void hll_sample(param_test_t param_in){
 
 		create_socket<<<1,1,0,stream1>>>(context,socket1);
 		connect<<<1,1,0,stream1>>>(context,socket1,addr);
-		socket_send<<<1,1024,0,stream1>>>(context,socket1,data,transfer_length);
+		socket_send_pre<<<1,1,0,stream1>>>(context,socket1,transfer_length);
+		socket_send<<<2,1024,0,stream1>>>(context,socket1,data,transfer_length);
 	}else if(app_type==1){
 		int *mem;
 		cudaMalloc(&mem,sizeof(int)*65536);

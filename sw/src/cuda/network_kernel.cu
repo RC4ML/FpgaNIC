@@ -29,78 +29,124 @@ __global__ void socket_close(socket_context_t* ctx,connection_t* connection){
 	_socket_close(ctx,session_id);
 }
 __device__ void _socket_send(socket_context_t* ctx,int buffer_id,int * data_addr,size_t length){
-	__shared__ unsigned int block_length;
-	__shared__ int session_id;
-	int block_id = blockIdx.x;
+	int block_index = blockIdx.x;
+	int block_num = gridDim.x;
 	int index = blockIdx.x*blockDim.x+threadIdx.x;
-	int total_threads = blockDim.x;
-	BEGIN_SINGLE_THREAD_DO
-		session_id = ctx->buffer_info[buffer_id].session_id;
-	END_SINGLE_THREAD_DO
-	for(size_t i=0;i<length;i+=MAX_BLOCK_SIZE){
-		BEGIN_SINGLE_THREAD_DO
-			block_length = min((unsigned long)MAX_BLOCK_SIZE,length-i);
+	int index_in_blk = threadIdx.x;
+	int total_threads = blockDim.x*gridDim.x;
+	int block_threads = blockDim.x;
+	int cnt=0;
+
+	__shared__ unsigned int data[16];
+
+	BEGIN_BLOCK_ZERO_DO
+		cjdebug("buffer %d send\n",buffer_id);
+	END_BLOCK_ZERO_DO
+	for(int i=0;i<ctx->pre_pkg_cnt;i+=block_num){
+		int p = i+block_index;
+		int block_length	=	ctx->pre_length[p];
+		int buffer_offset	=	ctx->pre_buffer_offset_bytes[p]/sizeof(int);
+		size_t data_offset	=	ctx->pre_data_offset[p];
+
+		BEGIN_BLOCK_ZERO_DO
 			size_t cycle_count=clock64();
 			while(ctx->send_write_count[buffer_id] > ctx->send_read_count[buffer_id]+(SINGLE_BUFFER_LENGTH-MAX_PACKAGE_LENGTH-OVERHEAD)){
-				// #if SLOW_DEBUG
-				// cu_sleep(1);
-				// cjdebug("wait flow ctrl\n");
-				// #endif
-				// cu_sleep(0.1);
-				// cjdebug("wait flow ctrl %ld %ld\n",ctx->send_write_count[buffer_id],ctx->send_read_count[buffer_id]);
 				if( clock64()-cycle_count > size_t(15000000000L)){//1s = 3000000000
 					cjdebug("check flow ctrl: %ld %ld\n",ctx->send_write_count[buffer_id],ctx->send_read_count[buffer_id]);
 					while(1);
 				};
-			}//stuck if space not enough
-			
-		END_SINGLE_THREAD_DO
-		// parallel move data code
-		//move_data_to_send_buffer(ctx,buffer_id,block_length,data_addr);
-		int op_num = int(block_length/sizeof(int));
-		int iter_num = int(op_num/total_threads);
-		int addr_base_offset = SINGLE_BUFFER_LENGTH*buffer_id+ctx->send_buffer_offset[buffer_id];//base offset in bytes
-		addr_base_offset = int(addr_base_offset/sizeof(int));
-		{//move code
-			for(int i=0;i<iter_num;i++){
-				ctx->send_buffer[addr_base_offset+total_threads*i+index]		=	data_addr[total_threads*i+index];
 			}
+		END_BLOCK_ZERO_DO
+
+		int op_num = int(block_length/sizeof(int));
+		int iter_num = int(op_num/block_threads);
+		for(int j=0;j<iter_num;j++){
+			ctx->send_buffer[buffer_offset+block_threads*j+index_in_blk]	=	data_addr[data_offset+block_threads*j+index_in_blk];
 		}
-		data_addr+=int(block_length/sizeof(int));
-		
-		//inform code
-		__shared__ unsigned int data[16];
-		BEGIN_SINGLE_THREAD_DO
-			//cjdebug("move a block data done! offset:%x buffer:%d \n",ctx->send_buffer_offset[buffer_id],buffer_id);//cjmark
+
+		BEGIN_BLOCK_ZERO_DO
+			printf("move a block data done! buffer:%d offset:%x \n",buffer_id,data_offset);//cjmark
+			size_t cycle_count=clock64();
+			while(ctx->mutex_sender!=p){
+				if( clock64()-cycle_count > size_t(15000000000L)){//1s = 3000000000
+					cjdebug("wait mutex_sender,p:%d mutex:%d\n",p,ctx->mutex_sender);
+					while(1);
+				};
+			}
 			data[0] = block_length;//todo seq done
-			data[1] = ctx->send_buffer_offset[buffer_id];
-			data[2] = session_id;
+			data[1] = ctx->pre_buffer_offset_bytes[p];
+			data[2] = ctx->buffer_info[buffer_id].session_id;
 			data[3] = buffer_id;
 
 			ctx->send_write_count[buffer_id]	+=	block_length;
-			ctx->send_buffer_offset[buffer_id]	+=	block_length;
-			if(ctx->send_buffer_offset[buffer_id]>(SINGLE_BUFFER_LENGTH-MAX_PACKAGE_LENGTH)){
-				ctx->send_buffer_offset[buffer_id]	=	0;
-			}
-		END_SINGLE_THREAD_DO
+			// ctx->send_buffer_offset[buffer_id]	+=	block_length;
+			// if(ctx->send_buffer_offset[buffer_id]>(SINGLE_BUFFER_LENGTH-MAX_PACKAGE_LENGTH)){
+			// 	ctx->send_buffer_offset[buffer_id]	=	0;
+			// }
+			// cjdebug("write bypass\n")
+		END_BLOCK_ZERO_DO
 		write_bypass(ctx->send_data_cmd_bypass_reg,data);
-
-		// BEGIN_SINGLE_THREAD_DO//check cmd fifo overflow
-		// 	cnt++;
-		// 	if(cnt%32==0 && ctx->send_cmd_fifo_count[0]>500){
-		// 		printf("send_cmd_fifo_count %d\n",ctx->send_cmd_fifo_count[0]);
-		// 	}
-		// END_SINGLE_THREAD_DO
+		BEGIN_BLOCK_ZERO_DO
+			ctx->mutex_sender=p+1;
+		END_BLOCK_ZERO_DO
 	}
+
+
+	// 	// BEGIN_SINGLE_THREAD_DO//check cmd fifo overflow
+	// 	// 	cnt++;
+	// 	// 	if(cnt%32==0 && ctx->send_cmd_fifo_count[0]>500){
+	// 	// 		printf("send_cmd_fifo_count %d\n",ctx->send_cmd_fifo_count[0]);
+	// 	// 	}
+	// 	// END_SINGLE_THREAD_DO
+	// }
 	BEGIN_SINGLE_THREAD_DO
 		cjdebug("send data done,length=%fM\n",1.0*length/1024/1024);
 	END_SINGLE_THREAD_DO
 
 }
+
+__device__ void _socket_send_pre(socket_context_t* ctx,int buffer_id,size_t length){
+	int addr_base_offset_bytes = SINGLE_BUFFER_LENGTH*buffer_id+ctx->send_buffer_offset[buffer_id];
+	int cnt=0;
+	size_t data_offset_bytes=0;
+	ctx->pre_pkg_cnt=0;
+	ctx->mutex_sender=0;
+	for(size_t i=0;i<length;i+=MAX_BLOCK_SIZE){
+		int block_length = min((unsigned long)MAX_BLOCK_SIZE,length-i);
+		ctx->pre_data_offset[cnt]			=	data_offset_bytes/sizeof(int);
+		ctx->pre_buffer_offset_bytes[cnt]	=	addr_base_offset_bytes;
+		ctx->pre_length[cnt]				=	block_length;
+		ctx->pre_pkg_cnt					++;
+		data_offset_bytes					+=	block_length;
+		addr_base_offset_bytes				+=	block_length;
+		if(addr_base_offset_bytes>(SINGLE_BUFFER_LENGTH*buffer_id+SINGLE_BUFFER_LENGTH-MAX_PACKAGE_LENGTH)){
+			addr_base_offset_bytes=0;
+		}
+		ctx->send_buffer_offset[buffer_id]	=	addr_base_offset_bytes;
+		cnt++;
+	}
+}
+
+__global__ void socket_send_pre(socket_context_t* ctx,int* socket,size_t length){
+	int buffer_id;
+	BEGIN_SINGLE_THREAD_DO
+		int socket_id = *socket;
+		if(false==check_socket_validation(ctx,socket_id)){
+			cjerror("socket %d does not exists!\n",socket_id);
+			return;
+		}
+		if(ctx->socket_info[socket_id].valid == 0 ){
+			cjerror("socket %d does not have connections!\n",socket_id);
+			return;
+		}
+		buffer_id = ctx->socket_info[socket_id].buffer_id;
+	END_SINGLE_THREAD_DO
+	_socket_send_pre(ctx,buffer_id,length);
+}
 __global__ void socket_send(socket_context_t* ctx,int* socket,int * data_addr,size_t length){
 	__shared__ int buffer_id;
 	//verify socket
-	BEGIN_SINGLE_THREAD_DO
+	BEGIN_BLOCK_ZERO_DO
 		cjinfo("function socket_send called!\n");
 		size_t t = clock64();
 		//cjprint("send t= %ld\n",t);
@@ -117,7 +163,7 @@ __global__ void socket_send(socket_context_t* ctx,int* socket,int * data_addr,si
 
 		buffer_id = ctx->socket_info[socket_id].buffer_id;
 		cjdebug("send data,socket:%d  buffer_id:%d data_addr:%lx length:%ld\n",(*socket),buffer_id,data_addr,length);
-	END_SINGLE_THREAD_DO
+	END_BLOCK_ZERO_DO
 	_socket_send(ctx,buffer_id,data_addr,length);
 }
 
@@ -541,7 +587,7 @@ __device__ void _socket_recv(socket_context_t* ctx,int buffer_id,int * data_addr
 __global__ void socket_recv(socket_context_t* ctx,int* socket,int * data_addr,size_t length){
 	__shared__ int socket_id;
 	__shared__ int buffer_id;
-	BEGIN_SINGLE_THREAD_DO
+	BEGIN_BLOCK_ZERO_DO
 		cjdebug("enter recv function!\n");
 		if(false==check_socket_validation(ctx,*socket)){
 			cjerror("socket %d does not exists!\n",*socket);
@@ -554,19 +600,19 @@ __global__ void socket_recv(socket_context_t* ctx,int* socket,int * data_addr,si
 		}
 		buffer_id = ctx->socket_info[socket_id].buffer_id;
 		cjdebug("recv data with socket:%d  buffer_id:%d	data_addr:%lx	length:%ld\n",socket_id,buffer_id,data_addr,length);
-	END_SINGLE_THREAD_DO
+	END_BLOCK_ZERO_DO
 	_socket_recv_data(ctx,buffer_id,data_addr,length);
 }
 
 __global__ void socket_recv(socket_context_t* ctx,connection_t* connection,int * data_addr,size_t length){
 	__shared__ int buffer_id;
 	//verify connection
-	BEGIN_SINGLE_THREAD_DO
+	BEGIN_BLOCK_ZERO_DO
 		if(connection->valid==0){
 			cjerror("connection is not valid!\n");
 			return;
 		}
-	END_SINGLE_THREAD_DO
+	END_BLOCK_ZERO_DO
 	_socket_recv_data(ctx,connection->buffer_id,data_addr,length);
 }
 
@@ -609,6 +655,7 @@ __global__ void send_kernel(socket_context_t* ctx,unsigned int *dev_buffer,fpga_
 			// BEGIN_SINGLE_THREAD_DO
 				int res = read_info(ctx);
 				if(res && node_type){
+					cjdebug("#############kernel stop\n");
 					break;
 				}
 				// #if SLOW_DEBUG
