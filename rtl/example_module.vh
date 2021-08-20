@@ -410,7 +410,38 @@ endtask
                     
 endinterface
 
+interface tcp_notification;
+    logic valid;
+    logic ready;
+    logic[15:0]     session;
+    logic[31:0]     ipaddr;
+    logic[15:0]     port;
+    logic[15:0]     length;
+    logic[7:0]      closeflag;
+
+    //logic           dest;
+
+    modport master (output valid,
+                    input ready,
+                    output session,
+                    output ipaddr,
+                    output port,
+                    output length,
+                    output closeflag);
+
+    modport slave ( input valid,
+                    output ready,
+                    input session,
+                    input ipaddr,
+                    input port,
+                    input length,
+                    input closeflag);
+
+
+
+endinterface
+
 `define FPGA_VERSION 20200610
-`define XDMA_BYPASS
+
 
 `endif

@@ -36,8 +36,8 @@ typedef struct param_cuda_thread{
 
 
  __global__ void movThread(param_cuda_thread_t param);
- __global__ void writeBypassReg(volatile unsigned int *dev_addr,int *blocks);
- __global__ void readBypassReg(volatile unsigned int *dev_addr,int *blocks);
+ //__global__ void writeBypassReg(volatile unsigned int *dev_addr,int *blocks);
+//  __global__ void readBypassReg(volatile unsigned int *dev_addr,int *blocks);
  __global__ void writeReg(volatile unsigned int *dev_addr,int *blocks);
  __global__ void compute(int * data,size_t length,int offset);
  __global__ void verify(int * data,size_t length,int offset);

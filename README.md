@@ -2,6 +2,13 @@
 
 ## Build example project
 
+## Rrerequisites
+
+```
+* GPU and FPGA are under the same PCIe switch.
+* Linux 4.15.0-20-generic;  Nvidia Driver Version: 450.51.05;  CUDA Version: 11.0
+```
+
 ### 1. Create build directory
 ```
 $ mkdir build

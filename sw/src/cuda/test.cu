@@ -88,7 +88,7 @@ void gpu_benchmark(param_test_t param_in,int burst,int ops,int start){
 	cout<<"start fpga workload\n";
 	int rd_sum,wr_sum;
 	float rd_speed,wr_speed;
-	int total_length = 25*1024*1024 ;
+	int total_length = 64*1024*1024 ;
 
 	controller ->writeReg(36,total_length);
 	controller ->writeReg(37,ops);
@@ -115,6 +115,7 @@ void gpu_benchmark(param_test_t param_in,int burst,int ops,int start){
 	}
 	if(start==1){//write
 		cout << " dma_write_cmd_counter1: " <<controller ->readReg(522) <<endl;
+		cout<<burst<<" "<<ops<<" "<<wr_sum<<endl;
 		cout <<  std::dec << "wr_speed: " << wr_speed << " GB/s" << endl;
 		outfile<<wr_speed<<endl;
 	}
@@ -247,6 +248,56 @@ __global__ void test_latency_fpga_gpu_cuda(unsigned int * ctrl_addr0,unsigned in
 	END_SINGLE_THREAD_DO
 	__syncthreads();
 	
+}
+
+__global__ void read_2080(unsigned int * ctrl_reg,unsigned int * by_reg,size_t length,int *out){
+	int index = blockIdx.x*blockDim.x+threadIdx.x;
+	int total_threads = blockDim.x*gridDim.x;
+	int op_num = int(length/(sizeof(int)));
+	int iter_num = int(op_num/total_threads);
+	for(int i=0;i<iter_num;i++){
+		out[total_threads*i+index] = by_reg[total_threads*i+index];
+		//by_reg[total_threads*i+index] = out[total_threads*i+index];
+	}
+	// by_reg[index] = index;
+	// for(int i=0;i<100;i++){
+	// 	BEGIN_SINGLE_THREAD_DO
+	// 		cu_sleep(5);
+	// 		printf("ctrl:%d\n",ctrl_reg[0]);
+	// 		ctrl_reg[0] = ctrl_reg[0]+1;
+	// 	END_SINGLE_THREAD_DO
+	// 	by_reg[index] = by_reg[index]+1;
+	// }
+}
+void test_2080(param_test_t param_in){
+
+	size_t length = 128*1024*1024;
+	int *out;
+	cudaMalloc(&out,length);
+	
+
+	fpga::XDMAController* controller = param_in.controller;
+	controller->writeReg(40,length/64);
+	// uint64_t* data=(uint64_t*)malloc(64);
+	// uint64_t* res=(uint64_t*)malloc(64);
+	// for(int i=0;i<8;i++){
+	// 	data[i]=i;
+	// 	res[i]=0;
+	// }
+	// controller->writeBypassReg(0,data);
+	// controller->readBypassReg(0,res);
+	// for(int i=0;i<8;i++){
+	// 	printf("%ld ",res[i]);
+	// }
+	// printf("\n");
+	unsigned int * ctrl_reg;
+	unsigned int * by_reg;
+	ctrl_reg = map_reg_4(500,controller);
+	by_reg = map_reg_cj(0,controller,length);
+	//read_2080<<<8,1024>>>(ctrl_reg,by_reg,length,out);
+	cudaMemcpy(out,by_reg,length,cudaMemcpyDeviceToDevice);
+	cudaError_t cudaerr = cudaDeviceSynchronize();
+	ErrCheck(cudaerr);
 }
 void test_latency_fpga_gpu(param_test_t param_in){
 	ofstream outctrl,outbypass,outdma;

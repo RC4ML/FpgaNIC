@@ -238,6 +238,16 @@ unsigned int* map_reg_64(int reg,fpga::XDMAController* controller){
 	return dev_addr;
 }
 
+unsigned int* map_reg_cj(int reg,fpga::XDMAController* controller,size_t length){
+	cudaError_t err;
+	void * addr = (void*)(controller->getBypassAddr(reg));
+	unsigned int * dev_addr;
+	err = cudaHostRegister(addr,length,cudaHostRegisterIoMemory);
+	ErrCheck(err);
+	cudaHostGetDevicePointer((void **) &(dev_addr), addr, 0);
+	return dev_addr;
+}
+
 
 
 __device__ void move_data_to_send_buffer(socket_context_t* ctx,int buffer_id,int block_length,int *data_addr){

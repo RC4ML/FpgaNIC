@@ -34,6 +34,8 @@ unsigned int* map_reg_4(int reg,fpga::XDMAController* controller);//check
 
 unsigned int* map_reg_64(int reg,fpga::XDMAController* controller);
 
+unsigned int* map_reg_cj(int reg,fpga::XDMAController* controller,size_t length);
+
 __device__ void move_data_to_send_buffer(socket_context_t* ctx,int buffer_id,int block_length,int *data_addr);//check
 
 __device__ void move_data_from_recv_buffer(socket_context_t* ctx,int buffer_id,int block_length,int *data_addr);//check

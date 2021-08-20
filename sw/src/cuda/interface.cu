@@ -171,7 +171,7 @@ void write_bypass(void* addr){
 	cudaMemcpy(device_blocks,&host_blocks,sizeof(int)*1,cudaMemcpyHostToDevice);
 	dim3 numBlocks(host_blocks,1);
 	
-	writeBypassReg<<<numBlocks,threadsPerBlock>>>(devPtrAddr,device_blocks);
+	//writeBypassReg<<<numBlocks,threadsPerBlock>>>(devPtrAddr,device_blocks);
 	cudaError_t cudaerr = cudaDeviceSynchronize();
     if (cudaerr != cudaSuccess)
         printf("kernel launch failed with error \"%s\".\n",
@@ -195,7 +195,7 @@ void read_bypass(void* addr){
 	cudaMemcpy(device_blocks,&host_blocks,sizeof(int)*1,cudaMemcpyHostToDevice);
 	dim3 numBlocks(host_blocks,1);
 	
-	readBypassReg<<<numBlocks,threadsPerBlock>>>(devPtrAddr,device_blocks);
+	//readBypassReg<<<numBlocks,threadsPerBlock>>>(devPtrAddr,device_blocks);
 	cudaError_t cudaerr = cudaDeviceSynchronize();
     if (cudaerr != cudaSuccess)
         printf("kernel launch failed with error \"%s\".\n",

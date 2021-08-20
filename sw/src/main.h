@@ -19,7 +19,7 @@
 #include <gdrapi.h>
 
 #define GPU_TLB
-// #define CPU_TLB
+//#define CPU_TLB
 
 
 void set_page_table();

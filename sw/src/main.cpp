@@ -42,7 +42,7 @@ using namespace gdrcopy::test;
 
 
 #define SHOWINFO 0
-size_t gpu_mem_size = 220*1024*1024;//bytes  220*1024*1024  size_t(8)*1024*1024*1024
+size_t gpu_mem_size = size_t(4)*1024*1024*1024;//bytes  220*1024*1024  size_t(1)*1024*1024*1024
 int dev_id = 0;//gpu device
 CUdevice dev;
 CUcontext dev_ctx;
@@ -57,7 +57,7 @@ int node_index = -1;
 
 void get_opt(int argc, char *argv[]){
 	int o;  // getopt() 的返回值
-    const char *optstring = "t:n:"; // 设置短参数类型及是否需要参数
+    const char *optstring = "t:n:m:"; // 设置短参数类型及是否需要参数
 
      while ((o = getopt(argc, argv, optstring)) != -1) {
         switch (o) {
@@ -89,16 +89,17 @@ int main(int argc, char *argv[]) {
 	// printf("fre:%f\n",get_fre());
 	// return 0;
 	get_opt(argc,argv);
-	set_page_table();
-	if(SHOWINFO){
-		cout<<"m_page_table.page_entries:"<<m_page_table.page_entries<<endl;
-	}
-	for(unsigned int i=0;i<m_page_table.page_entries-1;i++){
-		size_t t = m_page_table.pages[i+1]-m_page_table.pages[i];
-		if(t!=65536){
-			cout<<t<<"###############################error!\n";
+	#ifdef GPU_TLB
+		set_page_table();
+		for(unsigned int i=0;i<m_page_table.page_entries-1;i++){
+			size_t t = m_page_table.pages[i+1]-m_page_table.pages[i];
+			if(t!=65536){
+				cout<<t<<"###############################error!\n";
+			}
 		}
-	}
+	#endif
+
+	
 	param_test_t param;
 	param.controller = fpga::XDMA::getController();
 	#ifdef GPU_TLB
@@ -113,7 +114,16 @@ int main(int argc, char *argv[]) {
 		param.tlb_start_addr = (unsigned int *)dmaBuffer;
 	#endif
 	
-
+	// {
+	// 	hll_simple_dma_benchmark(param);
+	// 	sleep(3);
+	// 	start_cmd_control(param.controller);
+	// }
+	// {
+	// 	test_2080(param);
+	// 	sleep(3);
+	// 	start_cmd_control(param.controller);
+	// }
 	{//test latency and throughput between gpu and cpu
 		// int stride=64;
 		// for(int i=0;i<6;i++){
@@ -156,9 +166,9 @@ int main(int argc, char *argv[]) {
 	}
 	
 	{
-		mpi_allreduce(param);
-		sleep(3);
-		start_cmd_control(param.controller);
+		// mpi_allreduce(param);
+		// sleep(3);
+		// start_cmd_control(param.controller);
 	}
 
 	{
@@ -168,16 +178,16 @@ int main(int argc, char *argv[]) {
 	}
 
 	{
-		// hll_sample(param);
-		// sleep(3);
-		// start_cmd_control(param.controller);
+		hll_sample(param);
+		sleep(3);
+		start_cmd_control(param.controller);
 	}
 
 	{
-	//pressure test code  test fpga rd gpu memory speed
-	// ofstream outfile;
-	// int burst =2*1024*1024;
-	// int ops =50;
+	// pressure test code  test fpga rd gpu memory speed
+	ofstream outfile;
+	int burst =2*1024*1024;
+	int ops =50;
 	// for(int i=0;i<1;i++){
 	// 	pressure_test(param,burst,ops,2);
 	// }
@@ -185,8 +195,8 @@ int main(int argc, char *argv[]) {
 	// outfile<<endl;
 	// outfile.close();
 
-	// burst =1024;
-	// ops = 50000;
+	// burst =1024*1024;
+	// ops = 1;
 	// for(int i=0;i<11;i++){
 	// 	pressure_test(param,burst,ops,1);
 	// 	burst*=2;

@@ -42,10 +42,6 @@ update_compile_order -fileset sources_1
 
 
 source ${CMAKE_BINARY_DIR}/create_xdma_common_ip.tcl
+source ${CMAKE_BINARY_DIR}/create_tcpip_100g_common_ip.tcl
 
-#XDMA IP
-if {[string equal ${BYPASS} enable]} {
   source ${CMAKE_BINARY_DIR}/create_xdma_bypass_ip.tcl
-} else {
-  source ${CMAKE_BINARY_DIR}/create_xdma_ip.tcl
-} 

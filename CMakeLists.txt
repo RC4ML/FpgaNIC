@@ -17,10 +17,10 @@ elseif (NOT IPREPO_DIR)
    message("set iprepor dir ${IPREPO_DIR}")
 endif()
 
-
-if (NOT DEFINED BYPASS)
-   set(BYPASS disable)
-endif()
+   set(NETWORK_BANDWIDTH 100)
+   set(NETWORK_INTERFACE 100)
+   set(CLOCK_PERIOD 3.2)
+   set(DATA_WIDTH 64)
 
 
 
@@ -31,6 +31,13 @@ endif()
 #HLS IPs
 add_subdirectory(hls/mem_write_cmd_page_boundary_check_512)
 add_subdirectory(hls/tlb)
+add_subdirectory(hls/ethernet_frame_padding_512)
+add_subdirectory(hls/arp_server_subnet)
+add_subdirectory(hls/hash_table)
+add_subdirectory(hls/icmp_server)
+add_subdirectory(hls/ip_handler)
+add_subdirectory(hls/mac_ip_encode)
+add_subdirectory(hls/toe)
 
 
 ###VIVADO project
@@ -39,21 +46,13 @@ find_package(Vivado REQUIRED)
 if (NOT VIVADO_FOUND)
    message(FATAL_ERROR "Vivado not found.")
 endif()
-# configure_file(${CMAKE_CURRENT_SOURCE_DIR}/rtl/example_module.vh ${CMAKE_BINARY_DIR}/example_module.vh)
-if (BYPASS STREQUAL "enable") 
-   file(APPEND ${CMAKE_BINARY_DIR}/example_module.vh "
-    `ifndef XDMA_BYPASS
-    `define XDMA_BYPASS
-    `endif
-" )
-   endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_xdma_common_ip.tcl.in ${CMAKE_BINARY_DIR}/create_xdma_common_ip.tcl)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_xdma_ip.tcl.in ${CMAKE_BINARY_DIR}/create_xdma_ip.tcl)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_xdma_bypass_ip.tcl.in ${CMAKE_BINARY_DIR}/create_xdma_bypass_ip.tcl)
 
-
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_xdma_project.tcl.in ${CMAKE_BINARY_DIR}/create_project.tcl)
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_tcpip_100g_common_ip.tcl.in ${CMAKE_BINARY_DIR}/create_tcpip_100g_common_ip.tcl)
 
 
 set (PROJECT_DEPENDS
@@ -61,7 +60,8 @@ set (PROJECT_DEPENDS
       ${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_xdma_project.tcl.in
       ${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_xdma_common_ip.tcl.in
       ${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_xdma_ip.tcl.in
-      ${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_xdma_bypass_ip.tcl.in)
+      ${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_xdma_bypass_ip.tcl.in
+      ${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_tcpip_100g_common_ip.tcl.in)      
 
 add_custom_target(project
    COMMAND ${VIVADO_BINARY} -mode batch -source ${CMAKE_BINARY_DIR}/create_project.tcl

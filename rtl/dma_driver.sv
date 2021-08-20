@@ -43,10 +43,10 @@ module dma_driver(
 
     // Axi Lite Control interface
     axi_lite.master     m_axil,
-`ifdef XDMA_BYPASS  
+//`ifdef XDMA_BYPASS  
     // AXI MM Control Interface
     axi_mm.master       m_axim,
-`endif
+//`endif
     // AXI Stream Interface
     axi_stream.slave    s_axis_c2h_data[0:3],
     axi_stream.master   m_axis_h2c_data[0:3],
@@ -509,7 +509,7 @@ xdma_0 dma_inst (
   
 
   
-  `ifdef XDMA_BYPASS  
+//  `ifdef XDMA_BYPASS  
   // CQ Bypass ports
   // write address channel 
   ,.m_axib_awid      (m_axim.awid),
@@ -554,7 +554,7 @@ xdma_0 dma_inst (
   .m_axib_rlast     (m_axim.rlast),
   .m_axib_rvalid    (m_axim.rvalid),
   .m_axib_rready    (m_axim.rready)
-`endif  
+//`endif  
 );
 
 

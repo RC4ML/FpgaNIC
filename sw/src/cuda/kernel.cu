@@ -160,32 +160,32 @@ __global__ void movThread(param_cuda_thread_t param){
 
 
 
-__global__ void writeBypassReg(volatile unsigned int *dev_addr,int *blocks){
-	//printf("enter writeBypassReg thread with mapped dev_addr:%x\n",dev_addr);
-	int index = blockIdx.x*blockDim.x+threadIdx.x;
-	int stride = blocks[0]*blockDim.x;
-	int num = int(1024*1024/4/stride);
-	int sum=0;
-	for(int i=0;i<num;i++){
-		dev_addr[i*stride+index]=i;
-		sum+=dev_addr[i*stride+index];
-	}
-	printf("%d %d %d \n",index,stride,num);
-	printf("%d \n",sum);
-}
-__global__ void readBypassReg(volatile unsigned int *dev_addr,int *blocks){
-	//printf("enter readBypassReg thread with mapped dev_addr:%x\n",dev_addr);
-	int index = blockIdx.x*blockDim.x+threadIdx.x;
-	int next_addr,sum;
+// __global__ void writeBypassReg(volatile unsigned int *dev_addr,int *blocks){
+// 	//printf("enter writeBypassReg thread with mapped dev_addr:%x\n",dev_addr);
+// 	int index = blockIdx.x*blockDim.x+threadIdx.x;
+// 	int stride = blocks[0]*blockDim.x;
+// 	int num = int(1024*1024/4/stride);
+// 	int sum=0;
+// 	for(int i=0;i<num;i++){
+// 		dev_addr[i*stride+index]=i;
+// 		sum+=dev_addr[i*stride+index];
+// 	}
+// 	printf("%d %d %d \n",index,stride,num);
+// 	printf("%d \n",sum);
+// }
+// __global__ void readBypassReg(volatile unsigned int *dev_addr,int *blocks){
+// 	//printf("enter readBypassReg thread with mapped dev_addr:%x\n",dev_addr);
+// 	int index = blockIdx.x*blockDim.x+threadIdx.x;
+// 	int next_addr,sum;
 	
-	next_addr=dev_addr[1600+index];
-	clock_t s = clock64();
-	sum = dev_addr[next_addr+index];
-	// __threadfence();
-	clock_t e = clock64();
-	printf("latency:%lu\n",e-s);
-	printf("%d %d \n",next_addr,sum);
-}
+// 	next_addr=dev_addr[1600+index];
+// 	clock_t s = clock64();
+// 	sum = dev_addr[next_addr+index];
+// 	// __threadfence();
+// 	clock_t e = clock64();
+// 	printf("latency:%lu\n",e-s);
+// 	printf("%d %d \n",next_addr,sum);
+// }
 __global__ void writeReg(volatile unsigned int *dev_addr,int *blocks){
 	
 	int index = blockIdx.x*blockDim.x+threadIdx.x;

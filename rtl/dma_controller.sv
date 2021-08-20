@@ -76,6 +76,7 @@ module dma_controller
 
 );
     reg [1023:0][31:0]           fpga_reg;
+    reg [511:0][31:0]           fpga_status_reg_r;
 // localparam AXI_RESP_OK = 2'b00;
 // localparam AXI_RESP_SLVERR = 2'b10;
 
@@ -93,7 +94,7 @@ localparam READ_RESPONSE = 3;
 reg[1:0] writeState;
 reg[1:0] readState;
 
-reg[9:0] writeAddr;
+reg[8:0] writeAddr;
 reg[9:0] readAddr;
 
 reg[31:0] writeData;
@@ -111,12 +112,13 @@ always @(posedge user_clk)begin
     end
     else begin
         fpga_reg[511:0]             <= fpga_reg[511:0];
-        fpga_reg[1023:512]          <= fpga_status_reg;
+        fpga_reg[1023:512]          <= fpga_status_reg_r;
     end
 end
 
 always @(posedge user_clk)begin
     fpga_control_reg                <= fpga_reg[511:0];
+    fpga_status_reg_r               <= fpga_status_reg;
 end
 
 
@@ -130,7 +132,7 @@ always @(posedge user_clk)begin
             WRITE_IDLE: begin                
                 if (bram_en_a && bram_we_a[0]) begin
                     writeState <= WRITE_DATA;
-                    writeAddr <= bram_addr_a[11:2];
+                    writeAddr <= bram_addr_a[10:2];
                     writeData <= bram_wrdata_a;
                 end
             end //WRITE_IDLE
@@ -165,18 +167,18 @@ begin
     end
 end
 
-//ila_axil probe_ila_axil(
-//.clk(pcie_clk),
+// ila_axil probe_ila_axil(
+// .clk(pcie_clk),
 
-//.probe0(bram_en_a), // input wire [1:0]
-//.probe1(bram_we_a), // input wire [4:0]
-//.probe2(bram_addr_a), // input wire [16:0]
-//.probe3(bram_wrdata_a), // input wire [32:0]
-//.probe4(bram_rddata_a), // input wire [32:0]
-//.probe5(fpga_reg[0]), // input wire [32:0]
-//.probe6(fpga_reg[1]), // input wire [32:0]
-//.probe7(fpga_reg[127]) // input wire [32:0]
-//);
+// .probe0(bram_en_a), // input wire [1:0]
+// .probe1(bram_we_a), // input wire [4:0]
+// .probe2(bram_addr_a), // input wire [16:0]
+// .probe3(bram_wrdata_a), // input wire [32:0]
+// .probe4(bram_rddata_a), // input wire [32:0]
+// .probe5(fpga_reg[133]), // input wire [32:0]
+// .probe6(fpga_reg[641]) // input wire [32:0]
+// // .probe7(fpga_reg[127]) // input wire [32:0]
+// );
 
 endmodule
 `default_nettype wire
