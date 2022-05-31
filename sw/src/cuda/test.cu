@@ -110,7 +110,7 @@ void gpu_benchmark(param_test_t param_in,int burst,int ops,int start){
   	// cout << "rd_sum: " << rd_sum <<endl;
 	wr_speed = 1.0*burst*ops*250/wr_sum/1000;
 	rd_speed = 1.0*burst*ops*250/rd_sum/1000;
-	cout<<"busrt:"<<burst<<"Bytes, ops:"<<ops<<" mode:"<<start<<endl;
+	cout<<"busrt:"<<burst<<" Bytes, ops:"<<ops<<" mode:"<<start<<endl;
 	
 	
 	if(start==2){//read

@@ -58,7 +58,7 @@ And then run every commands in ~/xdma/sw/build
 
 
 ## Figure 4
-1. FPGA read/write A100 throughput:
+1. FPGA read/write A100 memory throughput:
 	```
 	$ sudo ./dma-example -b 2
 	```
@@ -126,7 +126,7 @@ data recv done! 332828 speed: 8.274263
 data recv done! 332208 speed: 8.289705
 data recv done! 332770 speed: 8.275705
 ```
-The overall throughput is the slowest one of one, instead of the sum of them.
+The overall throughput is the slowest one of one, instead of the sum of them. Press ctrl+C to exit in both machine.
 
 1. Figure 6a
 	Figure 6a is the throughput on different slot size.
@@ -135,7 +135,7 @@ The overall throughput is the slowest one of one, instead of the sum of them.
 	sudo ./dma-example -t server -b 4 -g 1 -s 128 -m 128
 
 	On atc_m4:
-	sudo ./dma-example -t clinet -b 4 -g 1 -s 128 -m 128
+	sudo ./dma-example -t client -b 4 -g 1 -s 128 -m 128
 
 	parameter after -m (max slot size, in kilo bytes) can be 16/32/64/128. If you want to try '-m 4' and '-m 8', you must change '-s' too. '-s 64 -m 8' and '-s 32 -m 4'
 	```
@@ -150,7 +150,7 @@ The overall throughput is the slowest one of one, instead of the sum of them.
 	sudo ./dma-example -t server -b 4 -g 1 -s 128 -m 1024
 
 	On atc_m4:
-	sudo ./dma-example -t clinet -b 4 -g 1 -s 128 -m 1024
+	sudo ./dma-example -t client -b 4 -g 1 -s 128 -m 1024
 
 	parameter after -m can be 64/128/256/512/1024
 	```
@@ -161,7 +161,7 @@ The overall throughput is the slowest one of one, instead of the sum of them.
 	sudo ./dma-example -t server -b 5 -g 1 -s 128 -m 1024
 
 	On atc_m4:
-	sudo ./dma-example -t server -b 5 -g 1 -s 128 -m 1024
+	sudo ./dma-example -t client -b 5 -g 1 -s 128 -m 1024
 
 	parameter after -m can be 64/128/256/512/1024
 	```
