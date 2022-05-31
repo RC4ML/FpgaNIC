@@ -56,4 +56,4 @@ set pass9 "Rc4ml0624@wcx\n"
 
 cj_reboot $user4 $ip4 $pass4
 sleep 10
-cj_ping $ip1
+cj_ping $ip4

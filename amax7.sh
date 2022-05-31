@@ -1,6 +1,6 @@
 #!/usr/bin/expect -f
-set user "amax3"
-set ip "192.168.189.9"
+set user "amax7"
+set ip "192.168.189.13"
 
 spawn ssh "$user@$ip" ; log_user 0;
 expect "]*"

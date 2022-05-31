@@ -4,13 +4,15 @@ set ip "192.168.189.10"
 
 spawn ssh "$user@$ip" ; log_user 0;
 expect "]*"
-send "sudo rm -rf /home/$user/xdma\n"
+send "sudo rm -rf /home/$user/xdma/*\n"
 expect "]*"
 send "exit\n"
 expect eof
 
-spawn rsync -av --exclude '.git'  /home/amax/cj/xdma/ "$user@$ip:/home/$user/xdma/"; log_user 0;
-expect "]*"
+exec bash -c "scp -r /home/amax/cj/xdma/driver '$user@$ip:/home/$user/xdma/driver'" log_user 1;
+exec bash -c "scp -r /home/amax/cj/xdma/gdrcopy '$user@$ip:/home/$user/xdma/gdrcopy'" log_user 1;
+exec bash -c "scp -r /home/amax/cj/xdma/sw '$user@$ip:/home/$user/xdma/sw'" log_user 1;
+exec bash -c "scp -r /home/amax/cj/xdma/CMakeLists.txt '$user@$ip:/home/$user/xdma'" log_user 1;
 sleep 3
 spawn ssh "$user@$ip"
 expect "]*"
@@ -25,6 +27,6 @@ expect "]*"
 send "make\n"
 expect eof
 expect eof
-send "sudo ./dma-example -t client -n 3\n"
+send "sudo ./dma-example -t server -n 4\n"
 expect "]*"
 interact

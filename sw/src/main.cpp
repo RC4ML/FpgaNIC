@@ -58,10 +58,11 @@ int benchmark_type = 0;
 int is_gpu_tlb = 1;
 size_t max_block_size_kilobyte = 64;
 size_t transfer_megabyte = 2;
+int hll_sm_num = 4;
 
 void get_opt(int argc, char *argv[]){
 	int o;  // getopt() 的返回值
-    const char *optstring = "t:n:m:b:g:s:"; // 设置短参数类型及是否需要参数
+    const char *optstring = "t:n:m:b:g:s:h:"; // 设置短参数类型及是否需要参数
 
      while ((o = getopt(argc, argv, optstring)) != -1) {
         switch (o) {
@@ -92,6 +93,9 @@ void get_opt(int argc, char *argv[]){
 			case 's':
 				transfer_megabyte = atoi(optarg);
 				break;
+			case 'h':
+				hll_sm_num = atoi(optarg);
+				break;
             case '?':
                 cjerror("error optopt: %c\n", optopt);
                 cjerror("error opterr: %d\n", opterr);
@@ -107,8 +111,9 @@ int main(int argc, char *argv[]) {
 	get_opt(argc,argv);
 	cjdebug("is_gpu_tlb:%d\n",is_gpu_tlb);
 	cjdebug("benchmark_type:%d\n",benchmark_type);
-	cjdebug("transfer_megabyte:%d\n",transfer_megabyte);
-	cjdebug("max_block_size_kilobyte:%d\n",max_block_size_kilobyte);
+	cjdebug("transfer_megabyte:%ld\n",transfer_megabyte);
+	cjdebug("max_block_size_kilobyte:%ld\n",max_block_size_kilobyte);
+	cjdebug("hll_sm_num:%d\n",hll_sm_num);
 	if(is_gpu_tlb){
 		set_page_table();
 		for(unsigned int i=0;i<m_page_table.page_entries-1;i++){
@@ -208,7 +213,7 @@ int main(int argc, char *argv[]) {
 
 
 	if(benchmark_type == 2){
-		printf("ATC::Figure 4, FPGA read A100 and FPGA wr A100 throughput test\n");
+		printf("ATC::Figure 4, FPGA read memory and FPGA write memory throughput test\n");
 		ofstream outfile;
 		int burst = 64;
 		int ops =10000;
@@ -230,7 +235,7 @@ int main(int argc, char *argv[]) {
 		outfile.close();
 	}
 	if(benchmark_type == 3){
-		printf("ATC:: test hll throughput with several SMs\n");
+		printf("ATC:: test hll throughput with %d SMs, each with 512 threads\n",hll_sm_num);
 		hll_sample(param);
 		sleep(3);
 		start_cmd_control(param.controller);

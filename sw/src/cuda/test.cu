@@ -85,7 +85,12 @@ void gpu_benchmark(param_test_t param_in,int burst,int ops,int start){
 	controller->writeReg(34,(unsigned int)recv_tlb_start_addr_value);
 	controller->writeReg(35,(unsigned int)(recv_tlb_start_addr_value>>32));
 
-	cout<<"###########start fpga workload\n";
+	if(start == 2){
+		cout<<"########### FPGA start reading memory\n";
+	}else if(start == 1){
+		cout<<"########### FPGA start writing memory\n";
+	}
+	
 	int rd_sum,wr_sum;
 	float rd_speed,wr_speed;
 	int total_length = 64*1024*1024 ;
@@ -105,18 +110,18 @@ void gpu_benchmark(param_test_t param_in,int burst,int ops,int start){
   	// cout << "rd_sum: " << rd_sum <<endl;
 	wr_speed = 1.0*burst*ops*250/wr_sum/1000;
 	rd_speed = 1.0*burst*ops*250/rd_sum/1000;
-	cout<<"busrt:"<<burst<<" ops:"<<ops<<" mode:"<<start<<endl;
+	cout<<"busrt:"<<burst<<"Bytes, ops:"<<ops<<" mode:"<<start<<endl;
 	
 	
 	if(start==2){//read
-		cout << "ignore it, dma_read_cmd_counter0: " <<controller -> readReg(525) <<endl;
-		cout <<  std::dec << "rd_speed: " << rd_speed << " GB/s" << endl;
+		// cout << "ignore it, dma_read_cmd_counter0: " <<controller -> readReg(525) <<endl;
+		cout <<  std::dec << "FPGA read memory speed : " << rd_speed << " GB/s" << endl;
 		outfile<<rd_speed<<endl;
 	}
 	if(start==1){//write
-		cout << "ignore it, dma_write_cmd_counter1: " <<controller ->readReg(522) <<endl;
-		cout<<burst<<" "<<ops<<" "<<wr_sum<<endl;
-		cout <<  std::dec << "wr_speed: " << wr_speed << " GB/s" << endl;
+		// cout << "ignore it, dma_write_cmd_counter1: " <<controller ->readReg(522) <<endl;
+		// cout<<burst<<" "<<ops<<" "<<wr_sum<<endl;
+		cout <<  std::dec << "FPGA write memory speed : " << wr_speed << " GB/s" << endl;
 		outfile<<wr_speed<<endl;
 	}
 	if(start==3){
@@ -163,7 +168,7 @@ void pressure_test(param_test_t param_in,int burst,int ops,int start){
 	// cout<<"Time:"<<elapsedTime<<endl;
 	// cout<<"speed"<<1.0*iter*buffer_size/elapsedTime/1024/1024/1024 << endl;
 	
-	cjdebug("###########gpu move done!\n");
+	cjdebug("########### end of this batch!\n");
 	cout<<endl<<endl;
 }
 

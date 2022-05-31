@@ -30,6 +30,7 @@ extern CUdeviceptr d_A;
 extern int is_gpu_tlb;
 extern size_t max_block_size_kilobyte;
 extern size_t transfer_megabyte;
+extern int hll_sm_num;
 
 typedef struct param_test{
 	fpga::XDMAController* controller;

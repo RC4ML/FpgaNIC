@@ -1,8 +1,10 @@
 #!/usr/bin/expect -f
-proc cj_reboot {user ip} {log_user 0;
+proc cj_reboot {user ip pass} {log_user 0;
 	spawn ssh "$user@$ip" ;
 	expect "]*"
 	send "sudo reboot\n"; log_user 1;
+	expect "]*"
+	send $pass
 	expect "]*"
 }
 
@@ -15,16 +17,16 @@ proc cj_ping {ip} {log_user 0;
         }
 }
 # spawn ping -c 2 -i 3 -W 1 192.168.189.10
+set ip1 "192.168.189.10"
+set user1 "amax4" 
+set pass1 "Rc4ml0624@9$\n"
 
+set ip2 "192.168.189.13"
+set user2 "amax7" 
+set pass2 "Rc4ml0624@15$\n"
 
-set ip3 "192.168.189.9"
-set user3 "amax3" 
+cj_reboot $user1 $ip1 $pass1
+cj_reboot $user2 $ip2 $pass2
 
-set ip4 "192.168.189.10"
-set user4 "amax4" 
-cj_reboot $user3 $ip3
-cj_reboot $user4 $ip4
-
-sleep 10
-cj_ping $ip3
-cj_ping $ip4
+cj_ping $ip1
+cj_ping $ip2

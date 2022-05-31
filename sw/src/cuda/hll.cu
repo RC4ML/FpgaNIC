@@ -37,7 +37,7 @@ __global__ void hll_raw_test(socket_context_t* ctx,size_t length,volatile unsign
 	BEGIN_BLOCK_ZERO_DO
 		end_time = clock64();
 		double speed = 1.0*length/1024/1024/1024/((end_time-start_time)/1.41/1e9);
-		printf("speed: %f\n",speed);
+		printf("speed: %f GB/s\n",speed);
 	END_BLOCK_ZERO_DO
 	
 }
@@ -176,7 +176,7 @@ void hll_sample(param_test_t param_in){
 		cudaMalloc(&mem,sizeof(int)*65536);
 		init<<<1,1>>>(context,mem);
 		hll_init_data<<<1,1024>>>(length,data);
-		hll_raw_test<<<4,512>>>(context,length,data);
+		hll_raw_test<<<hll_sm_num,512>>>(context,length,data);
 		cudaDeviceSynchronize();
 		cudaError_t cudaStatus = cudaGetLastError();
 		if (cudaStatus != cudaSuccess) {
