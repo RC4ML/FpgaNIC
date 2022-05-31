@@ -43,6 +43,7 @@ CUDA_ADD_EXECUTABLE(dma-example
 	cuda/test.cu
 	cuda/app.cu
 	cuda/hll.cu
+	cuda/kvs.cu
 	tool/test.cpp
 	tool/input.cpp
 	tool/log.cpp

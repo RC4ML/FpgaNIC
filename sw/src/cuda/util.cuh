@@ -9,8 +9,6 @@
 #include <arpa/inet.h>
 #include <string>
 
-#define MAX_CMD 50
-#define MAX_BLOCK_SIZE 2*1024*1024
 #define MAX_INFO_NUM 1024
 #define MAX_BUFFER_NUM 4
 
@@ -24,7 +22,7 @@
 #define TOTAL_BUFFER_LENGTH 100*1024*1024
 
 #define INFO_BUFFER_LENGTH 2*1024*1024
-#define MAX_PACKAGE_LENGTH 2*1024*1024
+#define MAX_PACKAGE_LENGTH (2*1024*1024)
 #define OVERHEAD 5*1024*1024
 
 #define FLOW_CONTROL_RATIO 0.5
@@ -35,8 +33,8 @@
 #define BEGIN_BLOCK_ZERO_DO __syncthreads(); if(FIRST_THREAD_IN_BLOCK()) { do{
 #define END_BLOCK_ZERO_DO }while(0); } __syncthreads();
 
-#define BEGIN_SINGLE_THREAD_DO __syncthreads(); if(FIRST_BLOCK()&&FIRST_THREAD_IN_BLOCK()) { do{
-#define END_SINGLE_THREAD_DO }while(0); } __syncthreads();
+#define BEGIN_SINGLE_THREAD_DO __threadfence_system(); __syncthreads(); if(FIRST_BLOCK()&&FIRST_THREAD_IN_BLOCK()) { do{
+#define END_SINGLE_THREAD_DO }while(0); } __threadfence_system();
 
 #define ErrCheck(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
@@ -128,6 +126,7 @@ typedef struct buffer_type{
 
 
 typedef struct socket_context{
+	size_t max_block_size;
 	volatile long recv_fifo_length[MAX_BUFFER_NUM][16];
 	volatile int recv_fifo_addr_offset[MAX_BUFFER_NUM][16];//in int instead of byte
 	volatile int recv_fifo_wr[MAX_BUFFER_NUM];

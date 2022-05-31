@@ -85,7 +85,7 @@ void gpu_benchmark(param_test_t param_in,int burst,int ops,int start){
 	controller->writeReg(34,(unsigned int)recv_tlb_start_addr_value);
 	controller->writeReg(35,(unsigned int)(recv_tlb_start_addr_value>>32));
 
-	cout<<"start fpga workload\n";
+	cout<<"###########start fpga workload\n";
 	int rd_sum,wr_sum;
 	float rd_speed,wr_speed;
 	int total_length = 64*1024*1024 ;
@@ -109,12 +109,12 @@ void gpu_benchmark(param_test_t param_in,int burst,int ops,int start){
 	
 	
 	if(start==2){//read
-		cout << " dma_read_cmd_counter0: " <<controller -> readReg(525) <<endl;
+		cout << "ignore it, dma_read_cmd_counter0: " <<controller -> readReg(525) <<endl;
 		cout <<  std::dec << "rd_speed: " << rd_speed << " GB/s" << endl;
 		outfile<<rd_speed<<endl;
 	}
 	if(start==1){//write
-		cout << " dma_write_cmd_counter1: " <<controller ->readReg(522) <<endl;
+		cout << "ignore it, dma_write_cmd_counter1: " <<controller ->readReg(522) <<endl;
 		cout<<burst<<" "<<ops<<" "<<wr_sum<<endl;
 		cout <<  std::dec << "wr_speed: " << wr_speed << " GB/s" << endl;
 		outfile<<wr_speed<<endl;
@@ -175,11 +175,11 @@ void test_latency_fpga_cpu(param_test_t param_in){
 
 	fpga::XDMAController* controller = param_in.controller;
 	uint64_t addr = (uint64_t)param_in.tlb_start_addr;
-	cout << " dma lat: " << controller ->readReg(593) << " cycle" << std::endl; 
+	// cout << " dma lat: " << controller ->readReg(593) << " cycle" << std::endl; 
 	controller ->writeReg(0,0);
 	controller ->writeReg(0,1);//reset
 	sleep(1);
-	cout << " dma lat: " << controller ->readReg(593) << " cycle" << std::endl; 
+	// cout << " dma lat: " << controller ->readReg(593) << " cycle" << std::endl; 
 	int ctrl_addr;
 	ctrl_addr = controller ->readReg(500);
 	controller ->readReg(ctrl_addr);
@@ -201,9 +201,9 @@ void test_latency_fpga_cpu(param_test_t param_in){
 	outctrl<<controller ->readReg(516)<<endl;
 	outbypass<<controller ->readReg(517)<<endl;
 	outdma<<controller ->readReg(593)<<endl;
-	cout << " ctrl lat: " << controller ->readReg(516)  << " cycle" << std::endl;  
-	cout << " by lat: " << controller ->readReg(517) << " cycle" << std::endl; 
-	cout << " dma lat: " << controller ->readReg(593) << " cycle" << std::endl; 
+	// cout << " ctrl lat: " << controller ->readReg(516)  << " cycle" << std::endl;  
+	cout << "CPU read FPGA latency: " << 1.0 * controller ->readReg(517) * 4 /1000 << " us" << std::endl; 
+	// cout << " dma lat: " << controller ->readReg(593) << " cycle" << std::endl; 
 
 	outctrl.close();
 	outbypass.close();
@@ -241,9 +241,9 @@ __global__ void test_latency_fpga_gpu_cuda(unsigned int * ctrl_addr0,unsigned in
 	clock_t e = clock64();
 	
 	BEGIN_SINGLE_THREAD_DO
-		printf("bypass latency:%lu\n",e-s);
-		printf("bypass_ctrl0:%d\n",res0[index]);
-		printf("bypass_ctrl1:%d\n",res1[index]);
+		// printf("bypass latency:%lu\n",e-s);
+		printf("ignore it:%d\n",res0[index]);
+		printf("ignore it:%d\n",res1[index]);
 		(*ctrl_addr0)=(unsigned int)(e-s);
 	END_SINGLE_THREAD_DO
 	__syncthreads();
@@ -334,9 +334,9 @@ void test_latency_fpga_gpu(param_test_t param_in){
 	outbypass<<controller ->readReg(500)<<endl;
 	outdma<<controller ->readReg(593)<<endl;
 	// cout << " ctrl lat: " << controller ->readReg(516)  << " cycle" << std::endl; 
-	cout << " by lat: " << controller ->readReg(500) << " cycle" << std::endl; 
-	cout << " by lat: " << controller ->readReg(517) << " cycle" << std::endl; 
-	cout << " dma lat: " << controller ->readReg(593) << " cycle" << std::endl; 
+	cout << "A100 read FPGA latency : " << 1.0 * controller ->readReg(500) /1.41 / 1000<< " us" << std::endl; //gpu rd fpga, clock of gpu, divide 1.41Ghz for A100
+	// cout << " by lat: " << controller ->readReg(517) << " cycle" << std::endl; 
+	// cout << " dma lat: " << controller ->readReg(593) << " cycle" << std::endl; 
 
 	// outctrl.close();
 	outbypass.close();
@@ -383,7 +383,7 @@ __global__ void compute_cuda(volatile int * data){
 		for(int i=0;i<200;i++){
 			sum+=res[i];
 		}
-		printf("res sum:%d\n",sum);
+		printf("ignore it, res sum:%d\n",sum);
 		for(int i=0;i<200;i++){
 			data[i]=lat[i];
 		}
@@ -414,64 +414,65 @@ __global__ void compute_cuda(volatile int * data){
 // }
 void test_simple(int stride){
 	{//throughput
-		ofstream out;
-		out.open("bw.txt", ios::out |ios::app );
-		struct timespec beg, end;
-		size_t N = size_t(2)*1024*1024;//workspace size
-		size_t size = N*sizeof(int);
+		// ofstream out;
+		// out.open("bw.txt", ios::out |ios::app );
+		// struct timespec beg, end;
+		// size_t N = size_t(2)*1024*1024;//workspace size
+		// size_t size = N*sizeof(int);
 		
-		int *data;//pinned
-		cudaMallocHost(&data,size);
+		// int *data;//pinned
+		// cudaMallocHost(&data,size);
 		
-		//int *data = (int *)malloc(size);
+		// //int *data = (int *)malloc(size);
 		
-		int *data_dst;
-		cudaMalloc(&data_dst, size);
+		// int *data_dst;
+		// cudaMalloc(&data_dst, size);
 		
-		for(int i=0;i<N;i++){
-			data[i] = i;
-		}
-		int op_times = int(size/stride);
-		int burst = int(stride/4);
-		clock_gettime(CLOCK_MONOTONIC, &beg);
-		for(int i=0;i<op_times;i++){
-			cudaMemcpy(data_dst+i*burst,data+i*burst,stride,cudaMemcpyHostToDevice);
-		}
+		// for(int i=0;i<N;i++){
+		// 	data[i] = i;
+		// }
+		// int op_times = int(size/stride);
+		// int burst = int(stride/4);
+		// clock_gettime(CLOCK_MONOTONIC, &beg);
+		// for(int i=0;i<op_times;i++){
+		// 	cudaMemcpy(data_dst+i*burst,data+i*burst,stride,cudaMemcpyHostToDevice);
+		// }
 		
-		cudaDeviceSynchronize();
-		clock_gettime(CLOCK_MONOTONIC, &end);
-		double t = 1.0*(end.tv_nsec-beg.tv_nsec)/(1e9)+(end.tv_sec-beg.tv_sec);//seconds
-		double bw = 1.0*N*4/t/1024/1024/1024;
-		//printf("t:%f\n",t);
-		printf("%f\n",bw);
-		out<<bw<<endl;
-		out.close();
-		cudaFree((void*)data);
-		cudaFree((void*)data_dst);
+		// cudaDeviceSynchronize();
+		// clock_gettime(CLOCK_MONOTONIC, &end);
+		// double t = 1.0*(end.tv_nsec-beg.tv_nsec)/(1e9)+(end.tv_sec-beg.tv_sec);//seconds
+		// double bw = 1.0*N*4/t/1024/1024/1024;
+		// //printf("t:%f\n",t);
+		// printf("%f\n",bw);
+		// out<<bw<<endl;
+		// out.close();
+		// cudaFree((void*)data);
+		// cudaFree((void*)data_dst);
 	}
 	{//latency
-		// ofstream out;
-		// out.open("latency.txt", ios::out |ios::app );
-		// size_t N = size_t(4000)*1024*1024;
-		// volatile int *data;
-		// cudaMallocHost(&data, N*sizeof(int));
+		ofstream out;
+		out.open("latency.txt", ios::out |ios::app );
+		size_t N = size_t(4000)*1024*1024;
+		volatile int *data;
+		cudaMallocHost(&data, N*sizeof(int));
 
-		// int next_index=stride/sizeof(int);
+		int next_index=stride/sizeof(int);
 
-		// for(int index=0;index<N; ){
-		// 	data[index] = next_index;
-		// 	index = next_index;
-		// 	next_index+=stride/sizeof(int);
-		// }
+		for(int index=0;index<N; ){
+			data[index] = next_index;
+			index = next_index;
+			next_index+=stride/sizeof(int);
+		}
 
-		// int tmp=0;
-		// compute_cuda<<<1,1>>>(data);
-		// cudaDeviceSynchronize();
+		int tmp=0;
+		compute_cuda<<<1,1>>>(data);
+		cudaDeviceSynchronize();
+		// cout<<"A100 read CPU latency: "<<1.0*data[0] / 1.4 /1000<<" us"<<endl;
 		// out<<"stride:"<<stride<<endl;
-		// for(int i=0;i<200;i++){
-		// 	out<<data[i]<<endl;
-		// }
-		// out.close();
+		for(int i=0;i<200;i++){
+			cout<<"A100 read CPU latency: "<<1.0*data[i] / 1.41 /1000<<" us"<<endl;
+		}
+		out.close();
 	}
 
 }

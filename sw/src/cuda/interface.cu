@@ -6,8 +6,76 @@
 #include <fstream>
 #include <iostream>
 #include "tool/log.hpp"
+#include "main.h"
 
 using namespace std;
+
+void socket_sample_offload_control(param_interface_socket_t param_in){
+	socket_context_t* context = get_socket_context(param_in.buffer_addr,param_in.tlb_start_addr,param_in.controller,0);
+	int * data;
+	size_t total_data_length = size_t(1)*1024*1024*1024;
+	cudaMalloc(&data,total_data_length);
+	sock_addr_t addr;
+	addr.ip = param_in.ip;
+	addr.port = param_in.port;
+
+	int* socket1;
+	cudaMalloc(&socket1,sizeof(int));
+
+	connection_t* connection1;
+	cudaMalloc(&connection1,sizeof(connection_t));
+
+	cudaStream_t stream1,stream2;
+	cudaEvent_t event1,event2;
+	cudaStreamCreate(&stream1);
+	cudaStreamCreate(&stream2);
+	cudaEventCreate(&event1);
+	cudaEventCreate(&event2);
+	sleep(1);
+	int verify_data_offset = 5;
+	size_t transfer_data_length = transfer_megabyte*1024*1024;
+	param_in.controller->writeReg(165,(unsigned int)(transfer_data_length/64));//count code
+	param_in.controller->writeReg(183,(unsigned int)(transfer_data_length/64));
+	if(app_type==0){
+		sleep(3);
+		create_socket<<<1,1,0,stream1>>>(context,socket1);
+		compute<<<1,1024,0,stream1>>>(data,total_data_length,verify_data_offset);
+		connect<<<1,1,0,stream1>>>(context,socket1,addr);
+		size_t max_block_size = max_block_size_kilobyte * 1024;
+		socket_send_pre<<<1,1,0,stream1>>>(context,socket1,transfer_data_length,max_block_size);
+		
+		unsigned int* ctrl_data;
+		cudaMallocManaged(&ctrl_data, sizeof(unsigned int)*16*4);
+		for(int i=0;i<transfer_data_length/max_block_size/4;i++){
+			// printf("start send kernel\n");
+			socket_send_offload_control<<<4,1024,0,stream1>>>(context,socket1,data,transfer_data_length,i*4,ctrl_data);
+			cudaEventRecord(event1, stream1);
+			cudaEventSynchronize(event1);
+			for(int j=0;j<4;j++){
+				param_in.controller->writeBypassReg(3,(uint64_t*)(ctrl_data+16*j));
+			}
+		}
+		printf("write data done\n");
+	}else if(app_type==1){
+		//server code
+		create_socket<<<1,1,0,stream1>>>(context,socket1);
+		socket_listen<<<1,1,0,stream1>>>(context,socket1,1235);
+		accept<<<1,1,0,stream1>>>(context,socket1,connection1);
+		cudaEventRecord(event1, stream1);
+		cudaStreamWaitEvent(stream2, event1,0);
+		socket_recv<<<4,1024,0,stream1>>>(context,connection1,data,transfer_data_length);
+		socket_recv_ctrl<<<1,16,0,stream2>>>(context,connection1,data,transfer_data_length);
+		cudaEventRecord(event2, stream2);
+		cudaStreamWaitEvent(stream1, event2,0);
+		verify<<<1,1,0,stream1>>>(data,transfer_data_length,verify_data_offset);
+	}else{
+		cjerror("app_type not set!\n");
+	}
+	sleep(5);
+	cudaError_t cudaerr = cudaPeekAtLastError();
+	ErrCheck(cudaerr);
+}
+
 
 void socket_sample(param_interface_socket_t param_in){
 	socket_context_t* context = get_socket_context(param_in.buffer_addr,param_in.tlb_start_addr,param_in.controller,0);
@@ -23,14 +91,8 @@ void socket_sample(param_interface_socket_t param_in){
 	int* socket1;
 	cudaMalloc(&socket1,sizeof(int));
 
-	int* socket2;
-	cudaMalloc(&socket2,sizeof(int));
-
 	connection_t* connection1;
 	cudaMalloc(&connection1,sizeof(connection_t));
-
-	connection_t* connection2;
-	cudaMalloc(&connection2,sizeof(connection_t));
 
 	cudaStream_t stream1,stream2;
 	cudaEvent_t event1,event2;
@@ -42,15 +104,17 @@ void socket_sample(param_interface_socket_t param_in){
 	cjprint("start user code:\n");
 
 	int verify_data_offset = 5;
-	size_t transfer_data_length = size_t(500)*1024*1024;
+	size_t transfer_data_length = transfer_megabyte*1024*1024;
 	param_in.controller->writeReg(165,(unsigned int)(transfer_data_length/64));//count code
 	param_in.controller->writeReg(183,(unsigned int)(transfer_data_length/64));
+	size_t max_block_size = max_block_size_kilobyte * 1024;
 	if(app_type==0){
 		//client code
 		create_socket<<<1,1,0,stream1>>>(context,socket1);
 		compute<<<1,1024,0,stream1>>>(data,total_data_length,verify_data_offset);
 		connect<<<1,1,0,stream1>>>(context,socket1,addr);
-		socket_send<<<1,1024,0,stream1>>>(context,socket1,data,transfer_data_length);
+		socket_send_pre<<<1,1,0,stream1>>>(context,socket1,transfer_data_length,max_block_size);
+		socket_send<<<4,1024,0,stream1>>>(context,socket1,data,transfer_data_length);
 		//socket_send<<<1,1024,0,stream1>>>(context,socket1,data,transfer_data_length/2);
 		//socket_send<<<1,1024,0,stream1>>>(context,socket1,data+(transfer_data_length/2/4),transfer_data_length/2);
 		//socket_close<<<1,1,0,stream>>>(context,socket1);

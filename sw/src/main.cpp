@@ -24,7 +24,7 @@
 #include "cuda/test.cuh"
 #include "cuda/app.cuh"
 #include "cuda/hll.cuh"
-
+#include "cuda/kvs.cuh"
 // #include "cuda/cu_torch.cuh"
 
 
@@ -54,10 +54,14 @@ uint32_t *buf_ptr;
 void *map_d_ptr  = NULL;
 int app_type = -1;
 int node_index = -1;
+int benchmark_type = 0;
+int is_gpu_tlb = 1;
+size_t max_block_size_kilobyte = 64;
+size_t transfer_megabyte = 2;
 
 void get_opt(int argc, char *argv[]){
 	int o;  // getopt() 的返回值
-    const char *optstring = "t:n:m:"; // 设置短参数类型及是否需要参数
+    const char *optstring = "t:n:m:b:g:s:"; // 设置短参数类型及是否需要参数
 
      while ((o = getopt(argc, argv, optstring)) != -1) {
         switch (o) {
@@ -76,6 +80,18 @@ void get_opt(int argc, char *argv[]){
 				node_index = atoi(optarg);
 				cjdebug("node_index:%d\n",node_index);
 				break;
+			case 'b':
+				benchmark_type = atoi(optarg);
+				break;
+			case 'g':
+				is_gpu_tlb = atoi(optarg);
+				break;
+			case 'm':
+				max_block_size_kilobyte = atoi(optarg);
+				break;
+			case 's':
+				transfer_megabyte = atoi(optarg);
+				break;
             case '?':
                 cjerror("error optopt: %c\n", optopt);
                 cjerror("error opterr: %d\n", opterr);
@@ -89,7 +105,11 @@ int main(int argc, char *argv[]) {
 	// printf("fre:%f\n",get_fre());
 	// return 0;
 	get_opt(argc,argv);
-	#ifdef GPU_TLB
+	cjdebug("is_gpu_tlb:%d\n",is_gpu_tlb);
+	cjdebug("benchmark_type:%d\n",benchmark_type);
+	cjdebug("transfer_megabyte:%d\n",transfer_megabyte);
+	cjdebug("max_block_size_kilobyte:%d\n",max_block_size_kilobyte);
+	if(is_gpu_tlb){
 		set_page_table();
 		for(unsigned int i=0;i<m_page_table.page_entries-1;i++){
 			size_t t = m_page_table.pages[i+1]-m_page_table.pages[i];
@@ -97,59 +117,60 @@ int main(int argc, char *argv[]) {
 				cout<<t<<"###############################error!\n";
 			}
 		}
-	#endif
+	}
 
 	
 	param_test_t param;
 	param.controller = fpga::XDMA::getController();
-	#ifdef GPU_TLB
+	if(is_gpu_tlb){
 		param.map_d_ptr = (void *)d_A;
 		param.tlb_start_addr = (unsigned int *)d_A;
 		param.d_mem_cpu = (void *)buf_ptr;
-	#endif
-
-	#ifdef CPU_TLB
+	}else{
 		uint64_t* dmaBuffer =  (uint64_t*) fpga::XDMA::allocate(2*1024*1024);//1024*1024*480
 		param.map_d_ptr = (void *)0;
 		param.tlb_start_addr = (unsigned int *)dmaBuffer;
-	#endif
+	}
 	
 	// {
-	// 	hll_simple_dma_benchmark(param);
+	// 	kvs_benchmark(param);
 	// 	sleep(3);
 	// 	start_cmd_control(param.controller);
+	// }
+	// {
+		// hll_simple_dma_benchmark(param);
+		// sleep(3);
+		// start_cmd_control(param.controller);
 	// }
 	// {
 	// 	test_2080(param);
 	// 	sleep(3);
 	// 	start_cmd_control(param.controller);
 	// }
-	{//test latency and throughput between gpu and cpu
-		// int stride=64;
-		// for(int i=0;i<6;i++){
-		// 	test_simple(stride);
-		// 	stride*=2;
-		// }
-
-		//test_simple(32*1024*1024);
-
-		
+	
+	if(benchmark_type == 0){ //test latency and throughput between gpu and cpu
+		printf("ATC::Figure 3, A100 read CPU latenct test\n");
+		int stride=32*1024*1024;
+		for(int i=0;i<1;i++){
+			test_simple(stride);
+		}
 	}
-	{//test fpga latency with gpu or cpu
-		// #ifdef GPU_TLB
-		// 	cjinfo("test gpu-fpga latency\n");
-		// 	for(int i=0;i<200;i++){
-		// 		test_latency_fpga_gpu(param);
-		// 	}
-		// #endif
-		// #ifdef CPU_TLB
-		// 	cjinfo("test cpu-fpga latency\n");
-		// 	for(int i=0;i<200;i++){
-		// 		test_latency_fpga_cpu(param);
-		// 	}
-		// #endif
-		
+
+	if(benchmark_type == 1){//test fpga latency with gpu or cpu
+		printf("ATC::Figure 3, A100 read FPGA and CPU read FPGA latenct test\n");
+		if(is_gpu_tlb){
+			cjinfo("test gpu-fpga latency\n");
+			for(int i=0;i<10;i++){
+				test_latency_fpga_gpu(param);
+			}
+		}else{
+			cjinfo("test cpu-fpga latency\n");
+			for(int i=0;i<10;i++){
+				test_latency_fpga_cpu(param);
+			}
+		}
 	}
+		
 
 	{//gpu mem throughput test on block nums and threads
 		//test_gpu_throughput(param);
@@ -159,10 +180,18 @@ int main(int argc, char *argv[]) {
 		//cj_debug(param);
 	}
 
-	{//smart nic
-		// socket_send_test(param);
-		// sleep(3);
-		// start_cmd_control(param.controller);
+	if(benchmark_type == 4){ //smart nic, direct send/recv
+		printf("ATC::Figure 6a, A100 send to A100 speed, offload control panel\n");
+		socket_send_test(param);
+		sleep(3);
+		start_cmd_control(param.controller);
+	}
+
+	if(benchmark_type == 5){ //do not offload control panel
+		printf("ATC::Figure 6bc, A100 send to A100 speed, do not offload control panel\n");
+		socket_send_test_offload_control(param);
+		sleep(3);
+		start_cmd_control(param.controller);
 	}
 	
 	{
@@ -177,43 +206,34 @@ int main(int argc, char *argv[]) {
 		// start_cmd_control(param.controller);
 	}
 
-	{
+
+	if(benchmark_type == 2){
+		printf("ATC::Figure 4, FPGA read A100 and FPGA wr A100 throughput test\n");
+		ofstream outfile;
+		int burst = 64;
+		int ops =10000;
+		for(int i=0;i<10;i++){
+			pressure_test(param,burst,ops,2);
+			burst *= 2;
+		}
+		outfile.open("data.txt", ios::out |ios::app );
+		outfile<<endl;
+		outfile.close();
+
+		burst = 64;
+		for(int i=0;i<10;i++){
+			pressure_test(param,burst,ops,1);
+			burst *= 2;
+		}
+		outfile.open("data.txt", ios::out |ios::app );
+		outfile<<endl;
+		outfile.close();
+	}
+	if(benchmark_type == 3){
+		printf("ATC:: test hll throughput with several SMs\n");
 		hll_sample(param);
 		sleep(3);
 		start_cmd_control(param.controller);
-	}
-
-	{
-	// pressure test code  test fpga rd gpu memory speed
-	ofstream outfile;
-	int burst =2*1024*1024;
-	int ops =50;
-	// for(int i=0;i<1;i++){
-	// 	pressure_test(param,burst,ops,2);
-	// }
-	// outfile.open("data.txt", ios::out |ios::app );
-	// outfile<<endl;
-	// outfile.close();
-
-	// burst =1024*1024;
-	// ops = 1;
-	// for(int i=0;i<11;i++){
-	// 	pressure_test(param,burst,ops,1);
-	// 	burst*=2;
-	// }
-	// outfile.open("data.txt", ios::out |ios::app );
-	// outfile<<endl;
-	// outfile.close();
-
-	// burst =64*1024*1024;
-	// ops = 100;
-	// for(int i=0;i<11;i++){
-	// 	pressure_test(param,burst,ops,3);
-	// 	burst*=2;
-	// }
-	// outfile.open("data.txt", ios::out |ios::app );
-	// outfile<<endl;
-	// outfile.close();
 	}
 	
 	// uint64_t r_addr = controller ->getBypassAddr(0);
@@ -222,8 +242,8 @@ int main(int argc, char *argv[]) {
 	// for(int i=0;i<8;i++){
 	// 	a[i]=i;
 	// }
-    fpga::XDMA::clear();
-    close_device();
+    // fpga::XDMA::clear();
+    // close_device();
 	return 0;
 }
 

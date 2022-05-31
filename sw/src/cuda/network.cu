@@ -28,15 +28,20 @@ __global__ void socket_listen(socket_context_t* ctx,int *socket,int port){
 			cjerror("socket listen timeout\n");
 			return;
 		}else{
-			if(is_zero((unsigned int *)&res,0)){//todo
-				cjerror("socket listen failed with reg:%x\n",res);
-				return;
-			}else{
-				ctx->server_socket_id						=	socket_id;
-				ctx->server_port							=	port;
-				ctx->is_listening							=	1;
-				cjprint("socket %d listen success!\n",socket_id);
-			}
+			cjerror("socket listen  with reg:%x\n",res);//hhj has a bug to fix
+			ctx->server_socket_id						=	socket_id;
+			ctx->server_port							=	port;
+			ctx->is_listening							=	1;
+
+			// if(is_zero((unsigned int *)&res,0)){//todo
+			// 	cjerror("socket listen failed with reg:%x\n",res);
+			// 	return;
+			// }else{
+			// 	ctx->server_socket_id						=	socket_id;
+			// 	ctx->server_port							=	port;
+			// 	ctx->is_listening							=	1;
+			// 	cjprint("socket %d listen success!\n",socket_id);
+			// }
 		}
 	END_SINGLE_THREAD_DO
 }

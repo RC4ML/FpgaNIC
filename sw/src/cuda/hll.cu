@@ -54,7 +54,7 @@ __global__ void hll_simple(int* mem, size_t length,volatile unsigned int *data,v
 	int total_threads = blockDim.x*gridDim.x;
 	int block_id = blockIdx.x;
 
-	int batch_size = 128;
+	int batch_size = 8;
 
 	size_t op_num = length/sizeof(int);
 	int iter_num = int(op_num/total_threads);
@@ -95,6 +95,7 @@ __global__ void hll_simple(int* mem, size_t length,volatile unsigned int *data,v
 }
 
 void hll_simple_dma_benchmark(param_test_t param_in){
+	printf("start hll_simple_dma_benchmark\n");
 	unsigned int* device_addr_start = ((unsigned int*)param_in.map_d_ptr);
 	fpga::XDMAController* controller = param_in.controller;
 
@@ -120,7 +121,7 @@ void hll_simple_dma_benchmark(param_test_t param_in){
 
 	
 
-	hll_simple<<<4,1024>>>(mem,length,device_addr_start,reg);
+	hll_simple<<<256,512>>>(mem,length,device_addr_start,reg);
 
 	sleep(1);
 	controller ->writeReg(38,length); //len byte
@@ -128,9 +129,6 @@ void hll_simple_dma_benchmark(param_test_t param_in){
 	controller ->writeReg(39,1); //start
 	sleep(1);
 
-	
-
-	
 	cudaDeviceSynchronize();
 
 	verify<<<1,1>>>((int *)device_addr_start,length,0);
@@ -152,7 +150,7 @@ void hll_sample(param_test_t param_in){
 	socket_context_t* context = get_socket_context(buffer_addr,param_in.tlb_start_addr,param_in.controller,app_type);
 	
 	sock_addr_t addr;//6 -> 4
-	addr.ip = 0xc0a8bd0a;//0a => amax4
+	addr.ip = 0xc0a8bd0d;//0a => amax4
 	addr.port = 6666;
 
 	int* socket1;
@@ -178,7 +176,7 @@ void hll_sample(param_test_t param_in){
 		cudaMalloc(&mem,sizeof(int)*65536);
 		init<<<1,1>>>(context,mem);
 		hll_init_data<<<1,1024>>>(length,data);
-		hll_raw_test<<<8,512>>>(context,length,data);
+		hll_raw_test<<<4,512>>>(context,length,data);
 		cudaDeviceSynchronize();
 		cudaError_t cudaStatus = cudaGetLastError();
 		if (cudaStatus != cudaSuccess) {
@@ -187,35 +185,35 @@ void hll_sample(param_test_t param_in){
 
 		return;
 	}
-	int verify_data_offset = 5;
-	size_t transfer_length = size_t(50)*1024*1024*4;
-	param_in.controller->writeReg(165,(unsigned int)(transfer_length/64));//count code
-	param_in.controller->writeReg(183,(unsigned int)(transfer_length/64));
-	if(app_type==0){
-		sleep(3);
-		int * data;
-		cudaMalloc(&data,transfer_length);
-		compute<<<1,1024,0,stream1>>>(data,transfer_length,verify_data_offset);
+	// int verify_data_offset = 5;
+	// size_t transfer_length = size_t(50)*1024*1024*4;
+	// param_in.controller->writeReg(165,(unsigned int)(transfer_length/64));//count code
+	// param_in.controller->writeReg(183,(unsigned int)(transfer_length/64));
+	// if(app_type==0){
+	// 	sleep(3);
+	// 	int * data;
+	// 	cudaMalloc(&data,transfer_length);
+	// 	compute<<<1,1024,0,stream1>>>(data,transfer_length,verify_data_offset);
 
-		create_socket<<<1,1,0,stream1>>>(context,socket1);
-		connect<<<1,1,0,stream1>>>(context,socket1,addr);
-		socket_send_pre<<<1,1,0,stream1>>>(context,socket1,transfer_length);
-		socket_send<<<2,1024,0,stream1>>>(context,socket1,data,transfer_length);
-	}else if(app_type==1){
-		int *mem;
-		cudaMalloc(&mem,sizeof(int)*65536);
-		init<<<1,1>>>(context,mem);
+	// 	create_socket<<<1,1,0,stream1>>>(context,socket1);
+	// 	connect<<<1,1,0,stream1>>>(context,socket1,addr);
+	// 	socket_send_pre<<<1,1,0,stream1>>>(context,socket1,transfer_length);
+	// 	socket_send<<<2,1024,0,stream1>>>(context,socket1,data,transfer_length);
+	// }else if(app_type==1){
+	// 	int *mem;
+	// 	cudaMalloc(&mem,sizeof(int)*65536);
+	// 	init<<<1,1>>>(context,mem);
 
-		int * data_recv;
-		cudaMalloc(&data_recv,transfer_length);
-		create_socket<<<1,1,0,stream1>>>(context,socket1);
-		socket_listen<<<1,1,0,stream1>>>(context,socket1,6666);
-		accept<<<1,1,0,stream1>>>(context,socket1,connection1);
-		cudaEventRecord(event1, stream1);
-		cudaStreamWaitEvent(stream2, event1,0);
-		socket_recv<<<4,1024,0,stream1>>>(context,connection1,(int *)data_recv,transfer_length);
-		socket_recv_ctrl<<<1,16,0,stream2>>>(context,connection1,(int *)data_recv,transfer_length);
-		verify<<<1,1,0,stream1>>>(data_recv,transfer_length,verify_data_offset);
-	}
+	// 	int * data_recv;
+	// 	cudaMalloc(&data_recv,transfer_length);
+	// 	create_socket<<<1,1,0,stream1>>>(context,socket1);
+	// 	socket_listen<<<1,1,0,stream1>>>(context,socket1,6666);
+	// 	accept<<<1,1,0,stream1>>>(context,socket1,connection1);
+	// 	cudaEventRecord(event1, stream1);
+	// 	cudaStreamWaitEvent(stream2, event1,0);
+	// 	socket_recv<<<4,1024,0,stream1>>>(context,connection1,(int *)data_recv,transfer_length);
+	// 	socket_recv_ctrl<<<1,16,0,stream2>>>(context,connection1,(int *)data_recv,transfer_length);
+	// 	verify<<<1,1,0,stream1>>>(data_recv,transfer_length,verify_data_offset);
+	// }
 
 }

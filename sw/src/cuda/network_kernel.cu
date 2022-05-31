@@ -1,5 +1,6 @@
 #include "network_kernel.cuh"
 #include "tool/log.hpp"
+#include "main.h"
 
 __device__ void _socket_close(socket_context_t* ctx,int session_id){
 	BEGIN_SINGLE_THREAD_DO
@@ -53,7 +54,8 @@ __device__ void _socket_send(socket_context_t* ctx,int buffer_id,int * data_addr
 			while(ctx->send_write_count[buffer_id] > ctx->send_read_count[buffer_id]+(SINGLE_BUFFER_LENGTH-MAX_PACKAGE_LENGTH-OVERHEAD)){
 				if( clock64()-cycle_count > size_t(15000000000L)){//1s = 3000000000
 					cjdebug("check flow ctrl: %ld %ld\n",ctx->send_write_count[buffer_id],ctx->send_read_count[buffer_id]);
-					while(1);
+					// while(1);
+					cu_sleep(5);
 				};
 			}
 		END_BLOCK_ZERO_DO
@@ -65,7 +67,7 @@ __device__ void _socket_send(socket_context_t* ctx,int buffer_id,int * data_addr
 		}
 
 		BEGIN_BLOCK_ZERO_DO
-			printf("move a block data done! buffer:%d offset:%x \n",buffer_id,data_offset);//cjmark
+			// printf("move a block data done! buffer:%d offset:%x \n",buffer_id,data_offset);//cjmark
 			size_t cycle_count=clock64();
 			while(ctx->mutex_sender!=p){
 				if( clock64()-cycle_count > size_t(15000000000L)){//1s = 3000000000
@@ -73,17 +75,13 @@ __device__ void _socket_send(socket_context_t* ctx,int buffer_id,int * data_addr
 					while(1);
 				};
 			}
+			// cjdebug("mutex,p:%d mutex:%d\n",p,ctx->mutex_sender);
 			data[0] = block_length;//todo seq done
 			data[1] = ctx->pre_buffer_offset_bytes[p];
 			data[2] = ctx->buffer_info[buffer_id].session_id;
 			data[3] = buffer_id;
 
 			ctx->send_write_count[buffer_id]	+=	block_length;
-			// ctx->send_buffer_offset[buffer_id]	+=	block_length;
-			// if(ctx->send_buffer_offset[buffer_id]>(SINGLE_BUFFER_LENGTH-MAX_PACKAGE_LENGTH)){
-			// 	ctx->send_buffer_offset[buffer_id]	=	0;
-			// }
-			// cjdebug("write bypass\n")
 		END_BLOCK_ZERO_DO
 		write_bypass(ctx->send_data_cmd_bypass_reg,data);
 		BEGIN_BLOCK_ZERO_DO
@@ -111,8 +109,8 @@ __device__ void _socket_send_pre(socket_context_t* ctx,int buffer_id,size_t leng
 	size_t data_offset_bytes=0;
 	ctx->pre_pkg_cnt=0;
 	ctx->mutex_sender=0;
-	for(size_t i=0;i<length;i+=MAX_BLOCK_SIZE){
-		int block_length = min((unsigned long)MAX_BLOCK_SIZE,length-i);
+	for(size_t i=0;i<length;i+=ctx->max_block_size){
+		int block_length = min((unsigned long)(ctx->max_block_size),length-i);
 		ctx->pre_data_offset[cnt]			=	data_offset_bytes/sizeof(int);
 		ctx->pre_buffer_offset_bytes[cnt]	=	addr_base_offset_bytes;
 		ctx->pre_length[cnt]				=	block_length;
@@ -122,14 +120,15 @@ __device__ void _socket_send_pre(socket_context_t* ctx,int buffer_id,size_t leng
 		if(addr_base_offset_bytes>(SINGLE_BUFFER_LENGTH*buffer_id+SINGLE_BUFFER_LENGTH-MAX_PACKAGE_LENGTH)){
 			addr_base_offset_bytes=0;
 		}
-		ctx->send_buffer_offset[buffer_id]	=	addr_base_offset_bytes;
+		ctx->send_buffer_offset[buffer_id]	=	addr_base_offset_bytes;//useless
 		cnt++;
 	}
 }
 
-__global__ void socket_send_pre(socket_context_t* ctx,int* socket,size_t length){
+__global__ void socket_send_pre(socket_context_t* ctx,int* socket,size_t length, size_t max_block_size){
 	int buffer_id;
 	BEGIN_SINGLE_THREAD_DO
+		ctx->max_block_size = max_block_size;
 		int socket_id = *socket;
 		if(false==check_socket_validation(ctx,socket_id)){
 			cjerror("socket %d does not exists!\n",socket_id);
@@ -150,9 +149,10 @@ __global__ void socket_send(socket_context_t* ctx,int* socket,int * data_addr,si
 		cjinfo("function socket_send called!\n");
 		size_t t = clock64();
 		//cjprint("send t= %ld\n",t);
-		int socket_id = *socket;
+		// int socket_id = *socket;
+		int socket_id = 0;//todo, unknow bug
 		if(false==check_socket_validation(ctx,socket_id)){
-			cjerror("socket %d does not exists!\n",socket_id);
+			cjerror("socket_send: socket %d does not exists!\n",socket_id);
 			return;
 		}
 		
@@ -162,11 +162,95 @@ __global__ void socket_send(socket_context_t* ctx,int* socket,int * data_addr,si
 		}
 
 		buffer_id = ctx->socket_info[socket_id].buffer_id;
-		cjdebug("send data,socket:%d  buffer_id:%d data_addr:%lx length:%ld\n",(*socket),buffer_id,data_addr,length);
+		cjdebug("send data,socket:%d  buffer_id:%d data_addr:%lx length:%ld\n",socket_id,buffer_id,data_addr,length);
 	END_BLOCK_ZERO_DO
 	_socket_send(ctx,buffer_id,data_addr,length);
 }
 
+
+
+__global__ void socket_send_offload_control(socket_context_t* ctx,int* socket,int * data_addr,size_t length,int cur_idx, unsigned int* ctrl_data){
+	__shared__ int buffer_id;
+	//verify socket
+	BEGIN_BLOCK_ZERO_DO
+		cjinfo("function socket_send called!\n");
+		size_t t = clock64();
+		//cjprint("send t= %ld\n",t);
+		int socket_id = *socket;
+		if(false==check_socket_validation(ctx,socket_id)){
+			cjerror("socket %d does not exists!\n",socket_id);
+			return;
+		}
+		if(ctx->socket_info[socket_id].valid == 0 ){
+			cjerror("socket %d does not have connections!\n",socket_id);
+			return;
+		}
+		buffer_id = ctx->socket_info[socket_id].buffer_id;
+	END_BLOCK_ZERO_DO
+	
+	int block_index = blockIdx.x;
+	int block_num = gridDim.x;
+	int index = blockIdx.x*blockDim.x+threadIdx.x;
+	int index_in_blk = threadIdx.x;
+	int total_threads = blockDim.x*gridDim.x;
+	int block_threads = blockDim.x;
+
+	// BEGIN_BLOCK_ZERO_DO
+	// 	cjdebug("buffer %d send\n",buffer_id);
+	// END_BLOCK_ZERO_DO
+
+	// for(int i=0;i<ctx->pre_pkg_cnt;i+=block_num){
+		int p = cur_idx+block_index;
+		int block_length	=	ctx->pre_length[p];
+		int buffer_offset	=	ctx->pre_buffer_offset_bytes[p]/sizeof(int);
+		size_t data_offset	=	ctx->pre_data_offset[p];
+
+		BEGIN_BLOCK_ZERO_DO
+			size_t cycle_count=clock64();
+			while(ctx->send_write_count[buffer_id] > ctx->send_read_count[buffer_id]+(SINGLE_BUFFER_LENGTH-MAX_PACKAGE_LENGTH-OVERHEAD)){
+				if( clock64()-cycle_count > size_t(15000000000L)){//1s = 3000000000
+					cjdebug("check flow ctrl: %ld %ld\n",ctx->send_write_count[buffer_id],ctx->send_read_count[buffer_id]);
+					// while(1);
+					cu_sleep(5);
+				};
+			}
+		END_BLOCK_ZERO_DO
+
+		int op_num = int(block_length/sizeof(int));
+		int iter_num = int(op_num/block_threads);
+		for(int j=0;j<iter_num;j++){
+			ctx->send_buffer[buffer_offset+block_threads*j+index_in_blk]	=	data_addr[data_offset+block_threads*j+index_in_blk];
+		}
+
+		BEGIN_BLOCK_ZERO_DO
+			size_t cycle_count=clock64();
+			while(ctx->mutex_sender!=p){
+				if( clock64()-cycle_count > size_t(15000000000L)){//1s = 3000000000
+					cjdebug("wait mutex_sender,p:%d mutex:%d\n",p,ctx->mutex_sender);
+					while(1);
+				};
+			}
+			// cjdebug("mutex,p:%d mutex:%d\n",p,ctx->mutex_sender);
+			// data[0] = block_length;//todo seq done
+			// data[1] = ctx->pre_buffer_offset_bytes[p];
+			// data[2] = ctx->buffer_info[buffer_id].session_id;
+			// data[3] = buffer_id;
+
+			ctrl_data[block_index*16+0] = block_length;
+			ctrl_data[block_index*16+1] = ctx->pre_buffer_offset_bytes[p];
+			ctrl_data[block_index*16+2] = ctx->buffer_info[buffer_id].session_id;
+			ctrl_data[block_index*16+3] = buffer_id;
+
+			ctx->send_write_count[buffer_id]	+=	block_length;
+			ctx->mutex_sender=p+1;
+		END_BLOCK_ZERO_DO
+		// write_bypass(ctx->send_data_cmd_bypass_reg,data);
+
+	// }
+	// BEGIN_SINGLE_THREAD_DO
+	// 	cjdebug("send data done,length=%fM\n",1.0*length/1024/1024);
+	// END_SINGLE_THREAD_DO
+}
 
 __global__ void socket_send(socket_context_t* ctx,connection_t* connection,int * data_addr,size_t length){
 	__shared__ int buffer_id;
@@ -212,7 +296,7 @@ __device__ void _socket_recv_data(socket_context_t* ctx,int buffer_id,int * data
 	END_BLOCK_ZERO_DO
 
 	BEGIN_BLOCK_ZERO_DO
-		cjinfo("enter recv data function!\n");
+		// cjdebug("enter _socket_recv_data function!\n");
 		// size_t t=clock64();
 		// cjprint("_socket_recv_data start t= %ld  blockid=%d\n",t,block_id);
 	END_BLOCK_ZERO_DO
@@ -296,7 +380,7 @@ __global__ void socket_recv_ctrl(socket_context_t* ctx,int* socket,int * data_ad
 	__shared__ int socket_id;
 	__shared__ int buffer_id;
 	BEGIN_SINGLE_THREAD_DO
-		cjdebug("enter recv function!\n");
+		// cjdebug("enter socket_recv_ctrl function!\n");
 		if(false==check_socket_validation(ctx,*socket)){
 			cjerror("socket %d does not exists!\n",*socket);
 			return;
@@ -344,7 +428,7 @@ __device__ void _socket_recv_ctrl(socket_context_t* ctx,int buffer_id,int * data
 		block_length=0;
 		cur_length=0;
 		flow_control_flag=0;
-		cjinfo("enter recv ctrl _function!\n");
+		// cjdebug("enter _socket_recv_ctrl function!\n");
 		// size_t t=clock64();
 		// cjprint("_socket_recv_ctrl start t= %ld\n",t);
 
@@ -588,7 +672,7 @@ __global__ void socket_recv(socket_context_t* ctx,int* socket,int * data_addr,si
 	__shared__ int socket_id;
 	__shared__ int buffer_id;
 	BEGIN_BLOCK_ZERO_DO
-		cjdebug("enter recv function!\n");
+		// cjdebug("enter socket_recv function!\n");
 		if(false==check_socket_validation(ctx,*socket)){
 			cjerror("socket %d does not exists!\n",*socket);
 			return;
@@ -608,6 +692,7 @@ __global__ void socket_recv(socket_context_t* ctx,connection_t* connection,int *
 	__shared__ int buffer_id;
 	//verify connection
 	BEGIN_BLOCK_ZERO_DO
+		// cjdebug("enter socket_recv function!\n");
 		if(connection->valid==0){
 			cjerror("connection is not valid!\n");
 			return;

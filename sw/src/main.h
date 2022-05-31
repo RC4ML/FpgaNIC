@@ -18,8 +18,6 @@
 #include <memory.h>
 #include <gdrapi.h>
 
-#define GPU_TLB
-//#define CPU_TLB
 
 
 void set_page_table();
@@ -29,6 +27,9 @@ void close_device();
 extern int app_type;
 extern int node_index;
 extern CUdeviceptr d_A;
+extern int is_gpu_tlb;
+extern size_t max_block_size_kilobyte;
+extern size_t transfer_megabyte;
 
 typedef struct param_test{
 	fpga::XDMAController* controller;

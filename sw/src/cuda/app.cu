@@ -25,46 +25,46 @@ volatile int *wr;
 volatile int *rd;
 
 void *start_routine(void *arg){
-	RunConfig cfg = RunConfig();
+	// RunConfig cfg = RunConfig();
 
 
-	sock_addr_t addr;
-	addr.ip		= cfg.next_ip_int;
-	addr.port	= 6666;
+	// sock_addr_t addr;
+	// addr.ip		= cfg.next_ip_int;
+	// addr.port	= 6666;
 
-	int* socket1;
-	cudaMalloc(&socket1,sizeof(int));
+	// int* socket1;
+	// cudaMalloc(&socket1,sizeof(int));
 
-	cudaStream_t stream_send;
-	cudaStreamCreate(&stream_send);
+	// cudaStream_t stream_send;
+	// cudaStreamCreate(&stream_send);
 
-	sleep(10);
-	create_socket<<<1,1,0,stream_send>>>(context,socket1);
-	connect<<<1,1,0,stream_send>>>(context,socket1,addr);
+	// sleep(10);
+	// create_socket<<<1,1,0,stream_send>>>(context,socket1);
+	// connect<<<1,1,0,stream_send>>>(context,socket1,addr);
 	
-	int part_index=cfg.cur_seq;
-	for(int i=0;i<cfg.total_node-1;i++){
-		all_reduce_wait<<<1,1,0,stream_send>>>(wr,rd);
-		int offset = int(part_index*single_data_length/sizeof(int));
-		cjprint("allreduce send, offset=%d\n",offset);
-		socket_send_pre<<<1,1,0,stream_send>>>(context,socket1,single_data_length);
-		socket_send<<<1,1024,0,stream_send>>>(context,socket1,data_gpu+offset,single_data_length);
-		part_index--;
-		if(part_index<0){
-			part_index+=cfg.total_node;
-		}
-	}
-	for(int i=0;i<cfg.total_node-1;i++){
-		all_reduce_wait<<<1,1,0,stream_send>>>(wr,rd);
-		int offset = int(part_index*single_data_length/sizeof(int));
-		cjprint("allreduce send, offset=%d\n",offset);
-		socket_send_pre<<<1,1,0,stream_send>>>(context,socket1,single_data_length);
-		socket_send<<<1,1024,0,stream_send>>>(context,socket1,data_gpu+offset,single_data_length);
-		part_index--;
-		if(part_index<0){
-			part_index+=cfg.total_node;
-		}
-	}
+	// int part_index=cfg.cur_seq;
+	// for(int i=0;i<cfg.total_node-1;i++){
+	// 	all_reduce_wait<<<1,1,0,stream_send>>>(wr,rd);
+	// 	int offset = int(part_index*single_data_length/sizeof(int));
+	// 	cjprint("allreduce send, offset=%d\n",offset);
+	// 	socket_send_pre<<<1,1,0,stream_send>>>(context,socket1,single_data_length);
+	// 	socket_send<<<1,1024,0,stream_send>>>(context,socket1,data_gpu+offset,single_data_length);
+	// 	part_index--;
+	// 	if(part_index<0){
+	// 		part_index+=cfg.total_node;
+	// 	}
+	// }
+	// for(int i=0;i<cfg.total_node-1;i++){
+	// 	all_reduce_wait<<<1,1,0,stream_send>>>(wr,rd);
+	// 	int offset = int(part_index*single_data_length/sizeof(int));
+	// 	cjprint("allreduce send, offset=%d\n",offset);
+	// 	socket_send_pre<<<1,1,0,stream_send>>>(context,socket1,single_data_length);
+	// 	socket_send<<<1,1024,0,stream_send>>>(context,socket1,data_gpu+offset,single_data_length);
+	// 	part_index--;
+	// 	if(part_index<0){
+	// 		part_index+=cfg.total_node;
+	// 	}
+	// }
 	//socket_close<<<1,1,0,stream_send>>>(context,socket1);
 	cjprint("send thread done!\n");
 }

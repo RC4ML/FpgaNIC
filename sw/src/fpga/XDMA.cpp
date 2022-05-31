@@ -118,7 +118,7 @@ void XDMA::initializeMemory() {
 //       vaddr += (2*1024*1024);
 //    }
 	
-	#ifdef GPU_TLB
+	if(is_gpu_tlb){
 		unsigned long vaddr = (unsigned long) d_A;
 		 cjinfo("vaddr start:%lx\n",vaddr);
 		 cjinfo("paddr start:%lx\n",(unsigned long)m_page_table.pages[0]);
@@ -127,16 +127,14 @@ void XDMA::initializeMemory() {
 			vaddr += (2*1024*1024);
 		}
 		cjinfo("GPU DIRECT TLB done\n");
-	#endif
-
-	#ifdef CPU_TLB
+	}else{
 		unsigned long vaddr = (unsigned long) huge_base;
 		for (auto i = 0; i < (int)map.npages; i++) { 
 			controller->writeTlb(vaddr, map.dma_addr[i], (i == 0));
 			vaddr += (2*1024*1024);
 		}
 		cjinfo("CPU MEM TLB done\n");
-	#endif
+	}
 
 
    	

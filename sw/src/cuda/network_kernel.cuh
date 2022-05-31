@@ -10,11 +10,13 @@
 
 __global__ void socket_send(socket_context_t* ctx,int* socket,int * data_addr,size_t length);
 
+__global__ void socket_send_offload_control(socket_context_t* ctx,int* socket,int * data_addr,size_t length, int cur_idx, unsigned int* ctrl_data);
+
 __global__ void socket_send(socket_context_t* ctx,connection_t* connection,int * data_addr,size_t length);
 
 __device__ void _socket_send(socket_context_t* ctx,int buffer_id,int * data_addr,size_t length);
 
-__global__ void socket_send_pre(socket_context_t* ctx,int* socket,size_t length);
+__global__ void socket_send_pre(socket_context_t* ctx,int* socket,size_t length, size_t max_block_size);
 
 __global__ void socket_recv_ctrl(socket_context_t* ctx,int* socket,int * data_addr,size_t length);//check
 
