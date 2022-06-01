@@ -17,6 +17,8 @@ $ git submodule update --init --recursive
 
 ## Build FPGA Project 
 
+It takes about 1-2 hours to generate a bitstream, you can also skip this step and directly use the generated bitstream file in the bitstream folder.
+
 ### Prerequisites
 
 - Xilinx Vivado 2020.1
