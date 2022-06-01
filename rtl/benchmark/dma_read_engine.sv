@@ -273,19 +273,19 @@ assign status_reg[1] = lat_cnt;
 // assign status_reg[9] = lat_sum[8];
 // assign status_reg[10] = lat_sum[9];
 
-ila_dma_benchmark rx (
-.clk(clk), // input wire clk
+//ila_dma_benchmark rx (
+//.clk(clk), // input wire clk
 
 
-.probe0(m_axis_dma_read_cmd.valid), // input wire [0:0]  probe0  
-.probe1(m_axis_dma_read_cmd.ready), // input wire [0:0]  probe1 
-.probe2(m_axis_dma_read_cmd.address), // input wire [63:0]  probe2 
-.probe3(m_axis_dma_read_cmd.length), // input wire [31:0]  probe3 
-.probe4(s_axis_dma_read_data.valid), // input wire [0:0]  probe4 
-.probe5(s_axis_dma_read_data.ready), // input wire [0:0]  probe5 
-.probe6(s_axis_dma_read_data.last), // input wire [0:0]  probe6 
-.probe7(s_axis_dma_read_data.data) // input wire [511:0]  probe7
-);
+//.probe0(m_axis_dma_read_cmd.valid), // input wire [0:0]  probe0  
+//.probe1(m_axis_dma_read_cmd.ready), // input wire [0:0]  probe1 
+//.probe2(m_axis_dma_read_cmd.address), // input wire [63:0]  probe2 
+//.probe3(m_axis_dma_read_cmd.length), // input wire [31:0]  probe3 
+//.probe4(s_axis_dma_read_data.valid), // input wire [0:0]  probe4 
+//.probe5(s_axis_dma_read_data.ready), // input wire [0:0]  probe5 
+//.probe6(s_axis_dma_read_data.last), // input wire [0:0]  probe6 
+//.probe7(s_axis_dma_read_data.data) // input wire [511:0]  probe7
+//);
 
 
 

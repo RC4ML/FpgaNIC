@@ -40,6 +40,9 @@ add_subdirectory(hls/mac_ip_encode)
 add_subdirectory(hls/toe)
 
 
+
+
+
 ###VIVADO project
 # Find Xilinx Vivado
 find_package(Vivado REQUIRED)
@@ -51,6 +54,12 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_xdma_ip.tcl.in ${CMAKE
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_xdma_bypass_ip.tcl.in ${CMAKE_BINARY_DIR}/create_xdma_bypass_ip.tcl)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_xdma_project.tcl.in ${CMAKE_BINARY_DIR}/create_project.tcl)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_project_pcie_benchmark.tcl.in ${CMAKE_BINARY_DIR}/pcie_benchmark.tcl)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_project_tcp_benchmark.tcl.in ${CMAKE_BINARY_DIR}/tcp_benchmark.tcl)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_project_tcp_latency.tcl.in ${CMAKE_BINARY_DIR}/tcp_latency.tcl)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_project_allreduce.tcl.in ${CMAKE_BINARY_DIR}/allreduce.tcl)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_project_hyperloglog.tcl.in ${CMAKE_BINARY_DIR}/hyperloglog.tcl)
+
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_tcpip_100g_common_ip.tcl.in ${CMAKE_BINARY_DIR}/create_tcpip_100g_common_ip.tcl)
 
@@ -58,11 +67,38 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_tcpip_100g_common_ip.t
 set (PROJECT_DEPENDS
       ${CMAKE_CURRENT_SOURCE_DIR}/rtl/example_module.vh
       ${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_xdma_project.tcl.in
+      ${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_project_pcie_benchmark.tcl.in
+      ${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_project_tcp_benchmark.tcl.in
+      ${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_project_tcp_latency.tcl.in
+      ${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_project_allreduce.tcl.in
+      ${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_project_hyperloglog.tcl.in
       ${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_xdma_common_ip.tcl.in
       ${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_xdma_ip.tcl.in
       ${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_xdma_bypass_ip.tcl.in
       ${CMAKE_CURRENT_SOURCE_DIR}/scripts/create_tcpip_100g_common_ip.tcl.in)      
 
-add_custom_target(project
+add_custom_target(direct
    COMMAND ${VIVADO_BINARY} -mode batch -source ${CMAKE_BINARY_DIR}/create_project.tcl
    DEPENDS ${PROJECT_DEPENDS})
+
+add_custom_target(pcie_benchmark
+   COMMAND ${VIVADO_BINARY} -mode batch -source ${CMAKE_BINARY_DIR}/pcie_benchmark.tcl
+   DEPENDS ${PROJECT_DEPENDS})
+
+add_custom_target(tcp_benchmark
+   COMMAND ${VIVADO_BINARY} -mode batch -source ${CMAKE_BINARY_DIR}/tcp_benchmark.tcl
+   DEPENDS ${PROJECT_DEPENDS})
+
+add_custom_target(tcp_latency
+   COMMAND ${VIVADO_BINARY} -mode batch -source ${CMAKE_BINARY_DIR}/tcp_latency.tcl
+   DEPENDS ${PROJECT_DEPENDS})
+
+add_custom_target(allreduce
+   COMMAND ${VIVADO_BINARY} -mode batch -source ${CMAKE_BINARY_DIR}/allreduce.tcl
+   DEPENDS ${PROJECT_DEPENDS})
+
+add_custom_target(hyperloglog
+   COMMAND ${VIVADO_BINARY} -mode batch -source ${CMAKE_BINARY_DIR}/hyperloglog.tcl
+   DEPENDS ${PROJECT_DEPENDS})
+
+

@@ -268,20 +268,20 @@ assign status_reg[0] = th_cnt;
 assign status_reg[1] = (data_cnt_o <<< 2);
 
 
-ila_dma_benchmark tx (
-.clk(clk), // input wire clk
+//ila_dma_benchmark tx (
+//.clk(clk), // input wire clk
 
 
-.probe0(m_axis_dma_write_cmd.valid), // input wire [0:0]  probe0  
-.probe1(m_axis_dma_write_cmd.ready), // input wire [0:0]  probe1 
-.probe2({data_cnt,data_cnt_o}), // input wire [63:0]  probe2 
-.probe3(data_count), // input wire [31:0]  probe3 
-.probe4(m_axis_dma_write_data.valid), // input wire [0:0]  probe4 
-.probe5(m_axis_dma_write_data.ready), // input wire [0:0]  probe5 
-.probe6(m_axis_dma_write_data.last), // input wire [0:0]  probe6 
-.probe7(m_axis_dma_write_data.data) // input wire [511:0]  probe7
+//.probe0(m_axis_dma_write_cmd.valid), // input wire [0:0]  probe0  
+//.probe1(m_axis_dma_write_cmd.ready), // input wire [0:0]  probe1 
+//.probe2({data_cnt,data_cnt_o}), // input wire [63:0]  probe2 
+//.probe3(data_count), // input wire [31:0]  probe3 
+//.probe4(m_axis_dma_write_data.valid), // input wire [0:0]  probe4 
+//.probe5(m_axis_dma_write_data.ready), // input wire [0:0]  probe5 
+//.probe6(m_axis_dma_write_data.last), // input wire [0:0]  probe6 
+//.probe7(m_axis_dma_write_data.data) // input wire [511:0]  probe7
 
-);
+//);
 
 
 

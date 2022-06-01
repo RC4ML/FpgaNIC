@@ -46,10 +46,34 @@ $ cmake ..
 $ make installip
 ```
 
-#### 4. Create vivado project
+#### 4. Create vivado project (You can choose one project to create)
+
+##### a. create direct project(Figure 6)
 ```
-$ make project
+$ make direct
 ```
+##### b. create pcie_benchmark project(Figure 3 4)
+```
+$ make pcie_benchmark
+```
+##### c. create tcp_latency project(Figure 5a)
+```
+$ make tcp_latency
+```
+##### d. create tcp_benchmark project(Figure 5b)
+```
+$ make tcp_benchmark
+```
+##### e. create allreduce project(Figure 7 8)
+```
+$ make allreduce
+```
+##### f. create hyperloglog project(Figure 9)
+```
+$ make hyperloglog
+```
+
+
 
 #### 5. Generate bitstream
 

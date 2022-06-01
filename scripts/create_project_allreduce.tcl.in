@@ -35,7 +35,7 @@ add_files $src_dir
 add_files -fileset constrs_1 $constraints_dir
 
 
-set_property top xdma_top_example [current_fileset]
+set_property top mpi_allreduce_top [current_fileset]
 update_compile_order -fileset sources_1
 
 
