@@ -137,7 +137,7 @@ And then run the commands in ~/xdma/sw_dev/sw/build
 Figure 5b is the TCP throughput on different packet size.
 
 As shown in the figure below, modify the TCP packet size in vio of Vivado Hardware Manage on machines. The value is 64/128/256/512/1024/1408
-
+![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/tcp_benchmark.jpg)
 Then, run the test.
 ```
 On atc_m4:
