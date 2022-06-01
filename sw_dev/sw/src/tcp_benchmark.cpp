@@ -20,7 +20,6 @@
 #include <unistd.h>
 #include <string.h>
 #include<string>
-#include <boost/program_options.hpp>
 
 #include "fpga/XDMA.h"
 #include "fpga/XDMAController.h"
@@ -32,11 +31,12 @@
 using namespace std;
 int node_index;
 int remote_node;
+int session_num;
 
 void get_opt(int argc, char *argv[])
 {
    int o;                        // getopt() 的返回值
-   const char *optstring = "n:m:"; // 设置短参数类型及是否需要参数
+   const char *optstring = "n:m:t:"; // 设置短参数类型及是否需要参数
 
    while ((o = getopt(argc, argv, optstring)) != -1)
    {
@@ -49,7 +49,11 @@ void get_opt(int argc, char *argv[])
       case 'm':
          remote_node = atoi(optarg);
          printf("remote_node:%d\n", remote_node);
-         break;               
+         break;      
+      case 't':
+         session_num = atoi(optarg);
+         printf("session_num:%d\n", session_num);
+         break;           
       case '?':
          printf("error optopt: %c\n", optopt);
          printf("error opterr: %d\n", opterr);
@@ -118,7 +122,6 @@ int main(int argc, char *argv[]) {
       };
       // cout << "listen status: " << controller->readReg(640) << endl;  
 
-   for(int i=1;i<=1000;i=i*10){
 
 
       controller ->writeReg(0,0);
@@ -138,17 +141,21 @@ int main(int argc, char *argv[]) {
       // controller ->writeReg(55,(uint32_t)1);
       controller ->writeReg(56,0);
 
-      cout << "press any key to continue: " << endl;
-      int a;
-      cin>>a;
 
-      cout << " ATC FIGURE 5(b) connection num: "<< i << endl;
+      cout << " ATC FIGURE 5(b) connection num: "<< session_num << endl;
       //dma speed latency
-      rd_sum = controller ->readReg(616);
-      wr_sum = controller ->readReg(608);
+
       // cout << " wr_sum: " << wr_sum <<endl; 
       // cout << " rd_sum: " << rd_sum <<endl;
 
+      cout <<"wait the client conn success, then press any key to show the result:"<<endl;
+
+      int a;
+      cin>>a;
+      cout <<a<<endl;
+
+      rd_sum = controller ->readReg(616);
+      wr_sum = controller ->readReg(608);
 
          // std::cout << " tcp_tx_meta_counter: " << controller ->readReg(609) <<  std::endl;  
          // std::cout << " tcp_tx_word_counter: " << controller ->readReg(610) << std::endl; 
@@ -170,10 +177,9 @@ int main(int argc, char *argv[]) {
 
 
       rd_speed = 1.0*tcp_length*ops*250*8/rd_sum/1000;
-      std::cout <<  std::dec << ", rd_speed: " << rd_speed << " Gbps" << std::endl;   
+      std::cout <<  std::dec << " rd_speed: " << rd_speed << " Gbps" << std::endl;   
       // file1<<rd_speed<<endl;  
 
-   }
 
    }
 
@@ -187,10 +193,10 @@ int main(int argc, char *argv[]) {
       };
       // session_id[0] = controller->readReg(641) & 0x0000ffff;
 
-   for(int i = 1;i < 1000; i++){
+   for(int i = 1;i < session_num; i++){
 
    sleep(0.5);
-   cout << "conn status: " << controller->readReg(641) << endl;
+   // cout << "conn status: " << controller->readReg(641) << endl;
       while(((controller->readReg(641)) >> 16)==0 ){
          // cout << "conn status: " << controller->readReg(641) << endl;
          if(controller->readReg(641) == 0){
@@ -207,31 +213,28 @@ int main(int argc, char *argv[]) {
       sleep(1);
       controller ->writeReg(134,(uint32_t)0);
    }
-      cout << "session_id: " << session_id << endl;
+      // cout << "session_id: " << session_id << endl;
       cout << "conn success: " << endl;
 
-      for(int j = 0;j <= 1000; j=j*10){
+
       int tcp_length = 1024*1024*64;
       int ops = 1;
       int offset = 2; 
 
-      controller ->writeReg(48,(uint32_t)session_id[j]);
+
+      controller ->writeReg(48,(uint32_t)session_id[0]);
       controller ->writeReg(49,(uint32_t)tcp_length);
       controller ->writeReg(50,(uint32_t)ops);
       controller ->writeReg(51,(uint32_t)offset);
+      controller ->writeReg(52,(uint32_t)session_num);
       controller ->writeReg(55,(uint32_t)0);
       controller ->writeReg(55,(uint32_t)2);
-
-      cout << "press any key to send next payload: " << endl;
-      int a;
-      cin>>a;
 
          // while((controller->readReg(610)) < (1024*8*(i+1)) ){
          //    // std::cout << i << " : "<< 1024*8*(i+1) << "----------"<< controller ->readReg(610) << std::endl; 
          //    // sleep(1);
          // };
 
-      }
 
    }
 

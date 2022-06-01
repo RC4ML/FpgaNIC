@@ -975,10 +975,116 @@ module dma_read_data_to_tcp#(
 	// 	.probe9({state,gpu_write_cnt[27:0]}) // input wire [31:0]  probe9		
 	// );
 
+/////////////////cmd_delay
+
+	reg  		time_en;
+	reg[31:0]	time_cnt;
+	reg[31:0]	time_rd,time_rd_r;
+	reg[31:0]	time_data;
+
+	always@(posedge clk)begin
+		if(~rstn)begin
+			time_en							<= 0;
+		end
+		else if(s_axis_cmd.ready & s_axis_cmd.valid)begin
+			time_en							<= 1;
+		end
+		else begin
+			time_en							<= time_en;
+		end
+	end
+
+	always@(posedge clk)begin
+		if(~rstn)begin
+			time_cnt						<= 0;
+		end
+		else if(time_en)begin
+			time_cnt						<= time_cnt + 1'b1;
+		end
+		else begin
+			time_cnt						<= time_cnt;
+		end
+	end
+
+	//////////////dma data cmd buffer ///////////
+	reg 									fifo_time_wr_en;
+	reg 									fifo_time_rd_en;			
+	wire 									fifo_time_almostfull;	
+	wire 									fifo_time_empty;
+	reg [31:0]								fifo_time_wr_data;	
+	wire [31:0]								fifo_time_rd_data;
+	wire 									fifo_time_rd_valid;
+	wire [9:0]								fifo_time_count;	
+
+	always@(posedge clk)begin
+		fifo_time_wr_data					<= time_cnt;
+		fifo_time_wr_en						<= s_axis_cmd.ready & s_axis_cmd.valid;
+	end
+
+	blockram_fifo #( 
+		.FIFO_WIDTH      ( 32 ), //64 
+		.FIFO_DEPTH_BITS ( 12 )  //determine the size of 16  13
+	) inst_time_fifo (
+	.clk        (clk),
+	.reset_n    (rstn),
+
+	//Writing side....
+	.we         (fifo_time_wr_en     ), //or one cycle later...
+	.din        (fifo_time_wr_data ),
+	.almostfull (fifo_time_almostfull), //back pressure to  
+
+	//reading side.....
+	.re         (fifo_time_rd_en     ),
+	.dout       (fifo_time_rd_data   ),
+	.valid      (fifo_time_rd_valid	),
+	.empty      (fifo_time_empty     ),
+	.count      (fifo_time_count   )
+	);
 
 
+	always@(posedge clk)begin
+		time_rd									<= control_reg[10];
+		time_rd_r								<= time_rd;
+	end
 
 
+	always@(posedge clk)begin
+		if(~rstn)begin
+			fifo_time_rd_en						<= 0;
+		end
+		else if(time_rd_r != time_rd)begin
+			fifo_time_rd_en						<= 1'b1;
+		end
+		else begin
+			fifo_time_rd_en						<= 0;
+		end
+	end
+
+	always@(posedge clk)begin
+		if(~rstn)begin
+			time_data						<= 0;
+		end
+		else if(fifo_time_rd_valid)begin
+			time_data						<= fifo_time_rd_data;
+		end
+		else begin
+			time_data						<= time_data;
+		end
+	end	
+
+	assign status_reg[6]					= time_data;
+
+//	ila_cmd_time ila_cmd_time_inst (
+//		.clk(clk), // input wire clk
+	
+	
+//		.probe0(s_axis_cmd.ready), // input wire [0:0]  probe0  
+//		.probe1(s_axis_cmd.valid), // input wire [0:0]  probe1 
+//		.probe2(time_cnt), // input wire [31:0]  probe2 
+//		.probe3(time_rd_r), // input wire [31:0]  probe3 
+//		.probe4(fifo_time_rd_valid), // input wire [0:0]  probe4 
+//		.probe5(time_data) // input wire [31:0]  probe5
+//	);
 
 
 

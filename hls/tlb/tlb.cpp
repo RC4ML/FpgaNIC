@@ -88,16 +88,18 @@ void tlb(	hls::stream<memCmd>& 	s_axis_mem_write_cmd,
 	{
 		s_axis_mem_write_cmd.read(cmd);
 		ap_uint<64> addr = cmd.addr - base_vaddr;
-		ap_uint<64> page_base = (addr >> 21);
-		ap_uint<64> page_offset = (addr & 0x1FFFFF);
-		pbase = tlb_table[page_base].paddr;
-		m_axis_dma_write_cmd.write(dmaCmd(pbase+page_offset, cmd.len));
+		ap_uint<64> page_base = (addr >> PAGE_BIT_WIDTH);
+		ap_uint<64> page_offset = (addr & PAGE_OFFSET);
+		if(page_base < top_page_base){
+			pbase = tlb_table[page_base].paddr;
+			m_axis_dma_write_cmd.write(dmaCmd(pbase+page_offset, cmd.len));
+		}
 		if (page_base > top_page_base)
 		{
 			tlbMissCounter++;
 			regTlbMissCount = tlbMissCounter;
 		}
-		if (page_offset + cmd.len > (2*1024*1024))
+		if (page_offset + cmd.len > (PAGE_SIZE))
 		{
 			tlbPageCrossingCounter++;
 			regPageCrossingCount = tlbPageCrossingCounter;
@@ -108,18 +110,20 @@ void tlb(	hls::stream<memCmd>& 	s_axis_mem_write_cmd,
 	{
 		s_axis_mem_read_cmd.read(cmd);
 		ap_uint<64> addr = cmd.addr - base_vaddr;
-		ap_uint<64> page_base = (addr >> 21);
-		ap_uint<64> page_offset = (addr & 0x1FFFFF);
+		ap_uint<64> page_base = (addr >> PAGE_BIT_WIDTH);
+		ap_uint<64> page_offset = (addr & PAGE_OFFSET);
 		std::cout << "page_base "<< std::hex << page_base << std::endl;
 		std::cout << "page_offset " << std::hex << page_offset << std::endl;
-		pbase = tlb_table[page_base].paddr;
-		m_axis_dma_read_cmd.write(dmaCmd(pbase+page_offset, cmd.len));
+		if(page_base < top_page_base){
+			pbase = tlb_table[page_base].paddr;
+			m_axis_dma_read_cmd.write(dmaCmd(pbase+page_offset, cmd.len));
+		}
 		if (page_base > top_page_base)
 		{
 			tlbMissCounter++;
 			regTlbMissCount = tlbMissCounter;
 		}
-		if (page_offset + cmd.len > (2*1024*1024))
+		if (page_offset + cmd.len > (PAGE_SIZE))
 		{
 			tlbPageCrossingCounter++;
 			regPageCrossingCount = tlbPageCrossingCounter;
@@ -133,7 +137,7 @@ void tlb(	hls::stream<memCmd>& 	s_axis_mem_write_cmd,
 			base_vaddr = newMapping.vaddr;
 		}
 		ap_uint<64> addr = newMapping.vaddr - base_vaddr;
-		ap_uint<64> page_base = (addr >> 21);
+		ap_uint<64> page_base = (addr >> PAGE_BIT_WIDTH);
 		//ap_uint<64> page_offset = (addr & 0x1FFFFFF);
 		tlb_table[page_base].paddr = newMapping.paddr;
 		if (page_base > top_page_base)

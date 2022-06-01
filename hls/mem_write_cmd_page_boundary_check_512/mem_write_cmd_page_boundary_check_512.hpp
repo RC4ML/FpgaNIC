@@ -30,8 +30,23 @@
 #include "../axi_utils.hpp"
 #include "../mem_utils.hpp"
 
+unsigned long ConstLog2(unsigned long val) {
+  return val == 1 ? 0 : 1 + ConstLog2(val >> 1);
+}
 
-const uint64_t PAGE_SIZE = 2 * 1024 * 1024;
+unsigned int ConstOffset(unsigned int val) {
+	int res = 0;
+	while(val--){
+		res=res+(1<<val);
+	}
+  return res; 
+}
+
+const unsigned PAGE_SIZE 	= 65536;   //2MB 2097152    64KB 65536
+
+const unsigned PAGE_BIT_WIDTH 	= ConstLog2(PAGE_SIZE);
+const unsigned PAGE_OFFSET 		= ConstOffset(PAGE_BIT_WIDTH);
+
 
 struct internalCmd
 {

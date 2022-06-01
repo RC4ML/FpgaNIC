@@ -40,7 +40,7 @@ module mem_tcp_data#(
     axis_meta.master     		m_axis_read_package,
     
     axis_meta.slave    			s_axis_rx_metadata,
-    axi_stream.slave   			s_axis_rx_data,
+    axi_stream.slave   			s_axis_rx_data
 
 	//control reg
 	// input wire[15:0][31:0]		control_reg,

@@ -362,29 +362,29 @@ module tcp_control#(
 
     /**/
 
- ila_tcp_ctrl ila_tcp_ctrl_inst (
- 	.clk(clk), // input wire clk
+// ila_tcp_ctrl ila_tcp_ctrl_inst (
+// 	.clk(clk), // input wire clk
 
 
- 	.probe0(m_axis_conn_send.valid), // input wire [0:0]  probe0  
- 	.probe1(m_axis_conn_send.ready), // input wire [0:0]  probe1 
- 	.probe2(m_axis_conn_send.data), // input wire [15:0]  probe2 
- 	.probe3(m_axis_ack_to_send.valid), // input wire [0:0]  probe3 
- 	 .probe4(m_axis_ack_to_send.ready), // input wire [0:0]  probe4 
- 	 .probe5(m_axis_ack_to_send.data), // input wire [7:0]  probe5 
- 	 .probe6(m_axis_open_connection.valid), // input wire [0:0]  probe6 
- 	 .probe7(m_axis_open_connection.ready), // input wire [0:0]  probe7 
- 	 .probe8(m_axis_open_connection.data), // input wire [47:0]  probe8 
- 	 .probe9(s_axis_open_status.valid), // input wire [0:0]  probe9 
- 	 .probe10(s_axis_open_status.ready), // input wire [0:0]  probe10 
- 	 .probe11(s_axis_open_status.data), // input wire [23:0]  probe11 
- 	 .probe12(m_axis_ack_to_recv.valid), // input wire [0:0]  probe12 
- 	 .probe13(m_axis_ack_to_recv.ready), // input wire [0:0]  probe13 
- 	 .probe14(m_axis_ack_to_recv.data), // input wire [15:0]  probe14
-	 .probe15(conn_start), // input wire [0:0]  probe15 
-	 .probe16(listen_start), // input wire [0:0]  probe16 
-	 .probe17(session_id) // input wire [7:0]  probe17 	
- );
+// 	.probe0(m_axis_conn_send.valid), // input wire [0:0]  probe0  
+// 	.probe1(m_axis_conn_send.ready), // input wire [0:0]  probe1 
+// 	.probe2(m_axis_conn_send.data), // input wire [15:0]  probe2 
+// 	.probe3(m_axis_ack_to_send.valid), // input wire [0:0]  probe3 
+// 	 .probe4(m_axis_ack_to_send.ready), // input wire [0:0]  probe4 
+// 	 .probe5(m_axis_ack_to_send.data), // input wire [7:0]  probe5 
+// 	 .probe6(m_axis_open_connection.valid), // input wire [0:0]  probe6 
+// 	 .probe7(m_axis_open_connection.ready), // input wire [0:0]  probe7 
+// 	 .probe8(m_axis_open_connection.data), // input wire [47:0]  probe8 
+// 	 .probe9(s_axis_open_status.valid), // input wire [0:0]  probe9 
+// 	 .probe10(s_axis_open_status.ready), // input wire [0:0]  probe10 
+// 	 .probe11(s_axis_open_status.data), // input wire [23:0]  probe11 
+// 	 .probe12(m_axis_ack_to_recv.valid), // input wire [0:0]  probe12 
+// 	 .probe13(m_axis_ack_to_recv.ready), // input wire [0:0]  probe13 
+// 	 .probe14(m_axis_ack_to_recv.data), // input wire [15:0]  probe14
+//	 .probe15(conn_start), // input wire [0:0]  probe15 
+//	 .probe16(listen_start), // input wire [0:0]  probe16 
+//	 .probe17(session_id) // input wire [7:0]  probe17 	
+// );
 
 
 

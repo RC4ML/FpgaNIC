@@ -32,7 +32,25 @@
 
 //#define USE_DDR
 
-const uint16_t TLB_ENTRIES = 16384;
+
+unsigned long ConstLog2(unsigned long val) {
+  return val == 1 ? 0 : 1 + ConstLog2(val >> 1);
+}
+
+unsigned int ConstOffset(unsigned int val) {
+	int res = 0;
+	while(val--){
+		res=res+(1<<val);
+	}
+  return res; 
+}
+
+
+const uint16_t TLB_ENTRIES 	= 512;
+const unsigned PAGE_SIZE 	= 65536;   //2MB 2097152    64KB 65536
+
+const unsigned PAGE_BIT_WIDTH 	= ConstLog2(PAGE_SIZE);
+const unsigned PAGE_OFFSET 		= ConstOffset(PAGE_BIT_WIDTH);
 
 struct dmaCmd
 {

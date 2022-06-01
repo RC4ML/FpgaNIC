@@ -20,7 +20,6 @@
 #include <unistd.h>
 #include <string.h>
 #include<string>
-#include <boost/program_options.hpp>
 
 #include "fpga/XDMA.h"
 #include "fpga/XDMAController.h"
@@ -32,11 +31,13 @@
 using namespace std;
 int node_index;
 int remote_node;
+int packet_size;
 
 void get_opt(int argc, char *argv[])
 {
-   int o;                        // getopt() 的返回�?   
-   const char *optstring = "n:m:"; // 设置短参数类型及是否需要参�?
+   int o;                        // getopt() 的返回值
+   const char *optstring = "n:m:p:"; // 设置短参数类型及是否需要参数
+
    while ((o = getopt(argc, argv, optstring)) != -1)
    {
       switch (o)
@@ -48,7 +49,11 @@ void get_opt(int argc, char *argv[])
       case 'm':
          remote_node = atoi(optarg);
          printf("remote_node:%d\n", remote_node);
-         break;               
+         break;      
+      case 'p':
+         packet_size = atoi(optarg);
+         printf("remote_node:%d\n", packet_size);
+         break;                   
       case '?':
          printf("error optopt: %c\n", optopt);
          printf("error opterr: %d\n", opterr);
@@ -107,14 +112,13 @@ int main(int argc, char *argv[]) {
    int conn_ip = 0xc0a8bd00 + remote_node;
    int conn_port = 1235;
    int session_id;
-   int payload_size[6] = {64,128,256,512,1024,1408};
 
    controller ->writeReg(0,0);
    controller ->writeReg(0,1);
    sleep(1);
 
 
-   controller ->writeReg(127,64);  
+   controller ->writeReg(127,packet_size);  
    controller ->writeReg(128,(uint32_t)mac);            
    controller ->writeReg(129,(uint32_t)ip_addr);
    controller ->writeReg(130,(uint32_t)listen_port);
@@ -159,8 +163,6 @@ int main(int argc, char *argv[]) {
 
    int length = 1024*1024*1024;
 
-   for(int i=0;i<=5;i++){
-
        
       controller ->writeReg(272,(uint32_t)addr0);     //wr base addr
       controller ->writeReg(273,(uint32_t)(addr0>>32));
@@ -169,36 +171,29 @@ int main(int argc, char *argv[]) {
       if(node_index==7){
          controller ->writeReg(276,0);
          controller ->writeReg(276,1);
-         cout << "press any key to start next exam: " << endl;
       }
-      if(node_index==4){
-        cout << "press any key to print the result and start next exam: " << endl;
-      }
-      
-      int a;
-      cin>>a;
-
-
-      controller ->writeReg(127,payload_size[i+1]);
 
       // cout << "net cycle: " << controller->readReg(800) << endl;
 
       // cout << "hll cycle: " << controller->readReg(801) << endl;
 
       if(node_index==4){
+
+         cout <<"wait the client conn success, then press any key to show the result:"<<endl;
+
+
+         int a;
+         cin>>a;
          float write_throughput,hll_throughput;
-         cout << "--------ATC FIGURE 9: the payloadsize is " << payload_size[i] <<" -------"<<endl;
+         cout << "--------ATC FIGURE 9: the payloadsize is " << packet_size <<" -------"<<endl;
          write_throughput = 1.0*length*250*8/controller->readReg(800)/1000;
          std::cout <<  std::dec << ", write_throughput: " << write_throughput << " Gbps" << std::endl;
 
          hll_throughput = 1.0*length*250*8/controller->readReg(801)/1000;
          std::cout <<  std::dec << ", write+hll_throughput: " << hll_throughput << " Gbps" << std::endl;
       }
-
-      controller ->writeReg(0,0);
-      controller ->writeReg(0,1);
       sleep(1);
-   }
+
 
    fpga::XDMA::clear();
 

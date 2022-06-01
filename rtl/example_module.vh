@@ -443,5 +443,6 @@ endinterface
 
 `define FPGA_VERSION 20200610
 
+`define TLB_NUM 8
 
 `endif

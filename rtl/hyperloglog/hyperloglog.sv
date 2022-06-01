@@ -251,28 +251,28 @@ assign status_reg[1] = net_cnt;
 
 
 
-ila_hyperloglog inst_ila_hyperloglog (
-	.clk(clk), // input wire clk
+//ila_hyperloglog inst_ila_hyperloglog (
+//	.clk(clk), // input wire clk
 
 
-	.probe0(m_axis_tx_metadata.ready), // input wire [0:0]  probe0  
-	.probe1(m_axis_tx_metadata.valid), // input wire [0:0]  probe1 
-	.probe2(s_axis_read_data.data), // input wire [47:0]  probe2 
-	.probe3(m_axis_tx_data.ready), // input wire [0:0]  probe3 
-	.probe4(m_axis_tx_data.valid), // input wire [0:0]  probe4 
-	.probe5(m_axis_tx_data.last), // input wire [0:0]  probe5 
-	.probe6(s_axis_read_data.ready), // input wire [0:0]  probe6 
-	.probe7(s_axis_read_data.valid), // input wire [0:0]  probe7 
-	.probe8(dma_read_data_last), // input wire [0:0]  probe8 
-	.probe9(m_axis_dma_write_cmd.valid), // input wire [0:0]  probe9 
-	.probe10(m_axis_dma_write_cmd.ready), // input wire [0:0]  probe10 
-	.probe11(m_axis_dma_write_data.valid), // input wire [0:0]  probe11 
-	.probe12(m_axis_dma_write_data.ready), // input wire [0:0]  probe12 
-	.probe13(m_axis_dma_write_data.data[31:0]), // input wire [31:0]  probe13 
-	.probe14(m_axis_dma_write_data.last), // input wire [0:0]  probe14
-	.probe15(th_cnt), // input wire [31:0]  probe15 
-	.probe16(net_cnt) // input wire [0:0]  probe16    
-);
+//	.probe0(m_axis_tx_metadata.ready), // input wire [0:0]  probe0  
+//	.probe1(m_axis_tx_metadata.valid), // input wire [0:0]  probe1 
+//	.probe2(s_axis_read_data.data), // input wire [47:0]  probe2 
+//	.probe3(m_axis_tx_data.ready), // input wire [0:0]  probe3 
+//	.probe4(m_axis_tx_data.valid), // input wire [0:0]  probe4 
+//	.probe5(m_axis_tx_data.last), // input wire [0:0]  probe5 
+//	.probe6(s_axis_read_data.ready), // input wire [0:0]  probe6 
+//	.probe7(s_axis_read_data.valid), // input wire [0:0]  probe7 
+//	.probe8(dma_read_data_last), // input wire [0:0]  probe8 
+//	.probe9(m_axis_dma_write_cmd.valid), // input wire [0:0]  probe9 
+//	.probe10(m_axis_dma_write_cmd.ready), // input wire [0:0]  probe10 
+//	.probe11(m_axis_dma_write_data.valid), // input wire [0:0]  probe11 
+//	.probe12(m_axis_dma_write_data.ready), // input wire [0:0]  probe12 
+//	.probe13(m_axis_dma_write_data.data[31:0]), // input wire [31:0]  probe13 
+//	.probe14(m_axis_dma_write_data.last), // input wire [0:0]  probe14
+//	.probe15(th_cnt), // input wire [31:0]  probe15 
+//	.probe16(net_cnt) // input wire [0:0]  probe16    
+//);
  
  endmodule
  `default_nettype wire

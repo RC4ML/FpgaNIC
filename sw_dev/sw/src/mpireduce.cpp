@@ -22,7 +22,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <string>
-#include <boost/program_options.hpp>
 
 #include "fpga/XDMA.h"
 #include "fpga/XDMAController.h"
@@ -36,8 +35,8 @@ int node_num;
 
 void get_opt(int argc, char *argv[])
 {
-   int o;                        // getopt() 的返回�?   
-   const char *optstring = "n:m:"; // 设置短参数类型及是否需要参�?
+   int o;                        // getopt() 的返回�?   
+   const char *optstring = "n:m:"; // 设置短参数类型及是否需要参�?
    while ((o = getopt(argc, argv, optstring)) != -1)
    {
       switch (o)
@@ -47,8 +46,8 @@ void get_opt(int argc, char *argv[])
          printf("node_index:%d\n", node_index);
          break;
       case 'm':
-         node_num = atoi(optarg);
-         printf("node_index:%d\n", node_index);
+         node_num = atoi(optarg)-1;
+         printf("node_index:%d\n", node_num+1);
          break;         
       case '?':
          printf("error optopt: %c\n", optopt);
@@ -66,10 +65,16 @@ void send_allreduce_cmd(fpga::XDMAController *controller, uint64_t addr0, uint32
    data[1] = client_length + ((uint64_t)total_length<<32);
    data[2] = tail_length + ((uint64_t)head_length<<32);
    data[3] = int_flag;
-   controller ->writeBypassReg(8,data);
-   // sleep(1);
+
+   cout << "After all the node prepare, press any key to continue:" <<endl;
    int b;
    cin>>b;
+
+   controller ->writeBypassReg(8,data);
+
+   sleep(3);
+
+
    // cout << "tcp_split_overflow: " << controller->readReg(687) << endl;
 
    // cout << "write_cmd0_counter: " << controller->readReg(780) << endl;
@@ -112,7 +117,7 @@ void send_allreduce_cmd(fpga::XDMAController *controller, uint64_t addr0, uint32
    // cout << "time_counter: " << controller->readReg(792) << endl;
    
    th = 2.0*client_length*(client_num+1)*500/time_cnt/1000;
-   std::cout <<  std::dec << ", allreduce_throughput: " << th << " GB/s" << std::endl;  
+   std::cout <<  std::dec << " allreduce_throughput: " << th << " GB/s" << std::endl;  
    // cout << "resp: " << controller->readReg(797) << endl;
 }
 
@@ -302,7 +307,7 @@ int main(int argc, char *argv[])
 
    uint32_t client_id = node_index;
    uint32_t client_num = node_num;
-   uint32_t large_length = 64*1024;
+   uint32_t large_length = 16*1024;
    uint32_t client_length = 2880;
    uint32_t total_length = client_length*(client_num+1);
    uint32_t token_divide = 11;

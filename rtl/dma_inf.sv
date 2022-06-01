@@ -216,17 +216,17 @@ module dma_inf(
     reg[7:0]                                by_arlen,by_arcnt;
     reg                                     by_rvalid;
     
-    assign axim_control.awready = 1;
-    assign axim_control.wready = 1;
-    assign axim_control.bid = 0;
-    assign axim_control.bresp = 3;
-    assign axim_control.bvalid = 1;
-    assign axim_control.arready = 1;    
-    assign axim_control.rid = 0;  
-    assign axim_control.rdata = rd_data;  
-    assign axim_control.rresp = 3;  
-    assign axim_control.rvalid = 1; 
-    assign axim_control.rlast = (1 == by_arcnt) & axim_control.rvalid & axim_control.rready;  
+    // assign axim_control.awready = 1;
+    // assign axim_control.wready = 1;
+    // assign axim_control.bid = 0;
+    // assign axim_control.bresp = 0;
+    // assign axim_control.bvalid = 1;
+    // assign axim_control.arready = 1;    
+    // assign axim_control.rid = 0;  
+    // assign axim_control.rdata = rd_data;  
+    // assign axim_control.rresp = 0;  
+    // assign axim_control.rvalid = 1; 
+    // assign axim_control.rlast = 1;//(1 == by_arcnt) & axim_control.rvalid & axim_control.rready;  
 
     // always@(posedge pcie_clk)begin
     //     if(~pcie_aresetn)begin
@@ -267,20 +267,20 @@ module dma_inf(
     //     end
     // end
 
-    always@(posedge pcie_clk)begin
-        if(~pcie_aresetn)begin
-            by_arcnt            <= 1'b0;
-        end
-        else if(axim_control.rlast)begin
-            by_arcnt            <= 1'b0;
-        end
-        else if(axim_control.rvalid & axim_control.rready)begin
-            by_arcnt            <= by_arcnt + 1;
-        end
-        else begin
-            by_arcnt            <= by_arcnt;
-        end
-    end
+    // always@(posedge pcie_clk)begin
+    //     if(~pcie_aresetn)begin
+    //         by_arcnt            <= 1'b0;
+    //     end
+    //     else if(axim_control.rlast)begin
+    //         by_arcnt            <= 1'b0;
+    //     end
+    //     else if(axim_control.rvalid & axim_control.rready)begin
+    //         by_arcnt            <= by_arcnt + 1;
+    //     end
+    //     else begin
+    //         by_arcnt            <= by_arcnt;
+    //     end
+    // end
 
     // fwft_8w fwft_8w (
     //     .clk(pcie_clk),              // input wire clk
@@ -296,81 +296,81 @@ module dma_inf(
     //   );
 
 
-//  // AXI stream interface for the CQ forwarding
-//    axi_bram_ctrl_1 axi_bram_gen_bypass_inst (
-//        .s_axi_aclk         (pcie_clk),
-//        .s_axi_aresetn      (pcie_aresetn),
-//        .s_axi_awid         (axim_control.awid ),
-//        .s_axi_awaddr       (axim_control.awaddr[19:0]),
-//        .s_axi_awlen        (axim_control.awlen),
-//        .s_axi_awsize       (axim_control.awsize),
-//        .s_axi_awburst      (axim_control.awburst),
-//        .s_axi_awlock       (1'd0),
-//        .s_axi_awcache      (4'd0),
-//        .s_axi_awprot       (3'd0),
-//        .s_axi_awvalid      (axim_control.awvalid),
-//        .s_axi_awready      (axim_control.awready),
-//        .s_axi_wdata        (axim_control.wdata),
-//        .s_axi_wstrb        (axim_control.wstrb),
-//        .s_axi_wlast        (axim_control.wlast),
-//        .s_axi_wvalid       (axim_control.wvalid),
-//        .s_axi_wready       (axim_control.wready),
-//        .s_axi_bid          (axim_control.bid),
-//        .s_axi_bresp        (axim_control.bresp),
-//        .s_axi_bvalid       (axim_control.bvalid),
-//        .s_axi_bready       (axim_control.bready),
-//        .s_axi_arid         (axim_control.arid),
-//        .s_axi_araddr       (axim_control.araddr[19:0]),
-//        .s_axi_arlen        (axim_control.arlen),
-//        .s_axi_arsize       (axim_control.arsize),
-//        .s_axi_arburst      (axim_control.arburst),
-//        .s_axi_arlock       (1'd0),
-//        .s_axi_arcache      (4'd0),
-//        .s_axi_arprot       (3'd0),
-//        .s_axi_arvalid      (axim_control.arvalid),
-//        .s_axi_arready      (axim_control.arready),
-//        .s_axi_rid          (axim_control.rid),
-//        .s_axi_rdata        (axim_control.rdata),
-//        .s_axi_rresp        (axim_control.rresp),
-//        .s_axi_rlast        (axim_control.rlast),
-//        .s_axi_rvalid       (axim_control.rvalid),
-//        .s_axi_rready       (axim_control.rready),
-//        .bram_rst_a         (),        // output wire bram_rst_a
-//        .bram_clk_a         (),        // output wire bram_clk_a
-//        .bram_en_a          (bypass_en_a),          // output wire bram_en_a
-//        .bram_we_a          (bypass_we_a),          // output wire [63 : 0] bram_we_a
-//        .bram_addr_a        (bypass_addr_a),      // output wire [15 : 0] bram_addr_a
-//        .bram_wrdata_a      (bypass_wrdata_a),  // output wire [511 : 0] bram_wrdata_a
-//        .bram_rddata_a      (rd_data)//bypass_rddata_a)  // input wire [511 : 0] bram_rddata_a        
-//    );  
+ // AXI stream interface for the CQ forwarding
+   axi_bram_ctrl_1 axi_bram_gen_bypass_inst (
+       .s_axi_aclk         (pcie_clk),
+       .s_axi_aresetn      (pcie_aresetn),
+       .s_axi_awid         (axim_control.awid ),
+       .s_axi_awaddr       (axim_control.awaddr[19:0]),
+       .s_axi_awlen        (axim_control.awlen),
+       .s_axi_awsize       (axim_control.awsize),
+       .s_axi_awburst      (axim_control.awburst),
+       .s_axi_awlock       (1'd0),
+       .s_axi_awcache      (4'd0),
+       .s_axi_awprot       (3'd0),
+       .s_axi_awvalid      (axim_control.awvalid),
+       .s_axi_awready      (axim_control.awready),
+       .s_axi_wdata        (axim_control.wdata),
+       .s_axi_wstrb        (axim_control.wstrb),
+       .s_axi_wlast        (axim_control.wlast),
+       .s_axi_wvalid       (axim_control.wvalid),
+       .s_axi_wready       (axim_control.wready),
+       .s_axi_bid          (axim_control.bid),
+       .s_axi_bresp        (axim_control.bresp),
+       .s_axi_bvalid       (axim_control.bvalid),
+       .s_axi_bready       (axim_control.bready),
+       .s_axi_arid         (axim_control.arid),
+       .s_axi_araddr       (axim_control.araddr[19:0]),
+       .s_axi_arlen        (axim_control.arlen),
+       .s_axi_arsize       (axim_control.arsize),
+       .s_axi_arburst      (axim_control.arburst),
+       .s_axi_arlock       (1'd0),
+       .s_axi_arcache      (4'd0),
+       .s_axi_arprot       (3'd0),
+       .s_axi_arvalid      (axim_control.arvalid),
+       .s_axi_arready      (axim_control.arready),
+       .s_axi_rid          (axim_control.rid),
+       .s_axi_rdata        (axim_control.rdata),
+       .s_axi_rresp        (axim_control.rresp),
+       .s_axi_rlast        (axim_control.rlast),
+       .s_axi_rvalid       (axim_control.rvalid),
+       .s_axi_rready       (axim_control.rready),
+       .bram_rst_a         (),        // output wire bram_rst_a
+       .bram_clk_a         (),        // output wire bram_clk_a
+       .bram_en_a          (bypass_en_a),          // output wire bram_en_a
+       .bram_we_a          (bypass_we_a),          // output wire [63 : 0] bram_we_a
+       .bram_addr_a        (bypass_addr_a),      // output wire [15 : 0] bram_addr_a
+       .bram_wrdata_a      (bypass_wrdata_a),  // output wire [511 : 0] bram_wrdata_a
+       .bram_rddata_a      (rd_data)//bypass_rddata_a)  // input wire [511 : 0] bram_rddata_a        
+   );  
 
-    // dma_bypass_controller inst_dma_bypass_controller(
-    // // pcie clk
-    //         .pcie_clk           (pcie_clk),
-    //         .pcie_aresetn       (pcie_aresetn), 
-    // // user clk
-    //         .user_clk           (user_clk),
-    //         .user_aresetn       (user_aresetn),
+    dma_bypass_controller inst_dma_bypass_controller(
+    // pcie clk
+            .pcie_clk           (pcie_clk),
+            .pcie_aresetn       (pcie_aresetn), 
+    // user clk
+            .user_clk           (user_clk),
+            .user_aresetn       (user_aresetn),
         
-    //         // Control Interface
-    //         .bram_en_a          (bypass_en_a),          // output wire bram_en_a
-    //         .bram_we_a          (bypass_we_a[0]),          // output wire [3 : 0] bram_we_a
-    //         .bram_addr_a        (bypass_addr_a),      // output wire [15 : 0] bram_addr_a
-    //         .bram_wrdata_a      (bypass_wrdata_a),  // output wire [31 : 0] bram_wrdata_a
-    //         .bram_rddata_a      (bypass_rddata_a),  // input wire [31 : 0] bram_rddata_a
-    //         // // bypass register
-    //         .axis_tcp_recv_read_cnt(axis_tcp_recv_read_cnt),             
-    //         .bypass_cmd         (bypass_cmd),
-    //         //off path cmd
-    //         .m_axis_get_data_cmd(m_axis_get_data_cmd),
-    //         .m_axis_put_data_cmd(m_axis_put_data_cmd),
-    //         //one side
-    //         .m_axis_get_data_form_net(m_axis_get_data_form_net),
-    //         .m_axis_put_data_to_net(m_axis_put_data_to_net) 
-    //         // .bypass_control_reg (bypass_control_reg),
-    //         // .bypass_status_reg  (bypass_status_reg)
+            // Control Interface
+            .bram_en_a          (bypass_en_a),          // output wire bram_en_a
+            .bram_we_a          (bypass_we_a[0]),          // output wire [3 : 0] bram_we_a
+            .bram_addr_a        (bypass_addr_a),      // output wire [15 : 0] bram_addr_a
+            .bram_wrdata_a      (bypass_wrdata_a),  // output wire [31 : 0] bram_wrdata_a
+            .bram_rddata_a      (bypass_rddata_a),  // input wire [31 : 0] bram_rddata_a
+            // // bypass register
+            .axis_tcp_recv_read_cnt(axis_tcp_recv_read_cnt),             
+            .bypass_cmd         (bypass_cmd),
+            //off path cmd
+            .m_axis_get_data_cmd(m_axis_get_data_cmd),
+            .m_axis_put_data_cmd(m_axis_put_data_cmd),
+            //one side
+            .m_axis_get_data_form_net(m_axis_get_data_form_net),
+            .m_axis_put_data_to_net(m_axis_put_data_to_net) 
+            // .bypass_control_reg (bypass_control_reg),
+            // .bypass_status_reg  (bypass_status_reg)
         
-    // );
+    );
 // ///////////////////////////degug//////////////////////////
 //         reg 									wr_th_en,wr_th_en_r,rd_lat_en;
 //         reg 									rd_th_en,rd_th_en_r;
@@ -379,176 +379,173 @@ module dma_inf(
 //         reg [31:0]								data_cnt,rd_data;
 //         reg [31:0]                              by_length;
 
-        always@(posedge pcie_clk)begin
-            by_length                           <= fpga_control_reg[40];
-            wr_th_en_r                          <= wr_th_en;
-            rd_th_en_r                          <= rd_th_en;
-        end
+    //     always@(posedge pcie_clk)begin
+    //         by_length                           <= fpga_control_reg[40];
+    //         wr_th_en_r                          <= wr_th_en;
+    //         rd_th_en_r                          <= rd_th_en;
+    //     end
 
-        always @(posedge pcie_clk)begin
-            if(~pcie_aresetn)begin
-                data_cnt 						<= 1'b0;
-            end
-            else if(data_cnt == by_length)begin
-                data_cnt						<= 1'b0;
-            end
-            else if(axim_control.wready & axim_control.wvalid)begin
-                data_cnt						<= data_cnt + 1'b1;
-            end
-            else begin
-                data_cnt						<= data_cnt;
-            end		
-        end        
+    //     always @(posedge pcie_clk)begin
+    //         if(~pcie_aresetn)begin
+    //             data_cnt 						<= 1'b0;
+    //         end
+    //         else if(data_cnt == by_length)begin
+    //             data_cnt						<= 1'b0;
+    //         end
+    //         else if(axim_control.wready & axim_control.wvalid)begin
+    //             data_cnt						<= data_cnt + 1'b1;
+    //         end
+    //         else begin
+    //             data_cnt						<= data_cnt;
+    //         end		
+    //     end        
 
-        always@(posedge pcie_clk)begin
-            if(~pcie_aresetn)begin
-                wr_th_en						<= 1'b0;
-            end  
-            else if(data_cnt == by_length)begin
-                wr_th_en						<= 1'b0;
-            end
-            else if(axim_control.awready & axim_control.awvalid)begin
-                wr_th_en						<= 1'b1;
-            end		
-            else begin
-                wr_th_en						<= wr_th_en;
-            end
-        end
+    //     always@(posedge pcie_clk)begin
+    //         if(~pcie_aresetn)begin
+    //             wr_th_en						<= 1'b0;
+    //         end  
+    //         else if(data_cnt == by_length)begin
+    //             wr_th_en						<= 1'b0;
+    //         end
+    //         else if(axim_control.awready & axim_control.awvalid)begin
+    //             wr_th_en						<= 1'b1;
+    //         end		
+    //         else begin
+    //             wr_th_en						<= wr_th_en;
+    //         end
+    //     end
     
         
-        always@(posedge pcie_clk)begin
-            if(~pcie_aresetn)begin
-                wr_th_sum						<= 32'b0;
-            end
-            else if(wr_th_en & ~wr_th_en_r)begin
-                wr_th_sum						<= 32'b0;
-            end 
-            else if(wr_th_en)begin
-                wr_th_sum						<= wr_th_sum + 1'b1;
-            end
-            else begin
-                wr_th_sum						<= wr_th_sum;
-            end
-        end
+    //     always@(posedge pcie_clk)begin
+    //         if(~pcie_aresetn)begin
+    //             wr_th_sum						<= 32'b0;
+    //         end
+    //         else if(wr_th_en & ~wr_th_en_r)begin
+    //             wr_th_sum						<= 32'b0;
+    //         end 
+    //         else if(wr_th_en)begin
+    //             wr_th_sum						<= wr_th_sum + 1'b1;
+    //         end
+    //         else begin
+    //             wr_th_sum						<= wr_th_sum;
+    //         end
+    //     end
 
 
 
 
-        always @(posedge pcie_clk)begin
-            if(~pcie_aresetn)begin
-                rd_data 						<= 1'b0;
-            end
-            else if(rd_data == by_length)begin
-                rd_data						    <= 1'b0;
-            end
-            else if(axim_control.rready & axim_control.rvalid)begin
-                rd_data						    <= rd_data + 1'b1;
-            end
-            else begin
-                rd_data						    <= rd_data;
-            end		
-        end        
+    //     always @(posedge pcie_clk)begin
+    //         if(~pcie_aresetn)begin
+    //             rd_data 						<= 1'b0;
+    //         end
+    //         else if(rd_data == by_length)begin
+    //             rd_data						    <= 1'b0;
+    //         end
+    //         else if(axim_control.rready & axim_control.rvalid)begin
+    //             rd_data						    <= rd_data + 1'b1;
+    //         end
+    //         else begin
+    //             rd_data						    <= rd_data;
+    //         end		
+    //     end        
 
-        always@(posedge pcie_clk)begin
-            if(~pcie_aresetn)begin
-                rd_th_en						<= 1'b0;
-            end  
-            else if(rd_data == by_length)begin
-                rd_th_en						<= 1'b0;
-            end
-            else if(axim_control.arready & axim_control.arvalid)begin
-                rd_th_en						<= 1'b1;
-            end		
-            else begin
-                rd_th_en						<= rd_th_en;
-            end
-        end
+    //     always@(posedge pcie_clk)begin
+    //         if(~pcie_aresetn)begin
+    //             rd_th_en						<= 1'b0;
+    //         end  
+    //         else if(rd_data == by_length)begin
+    //             rd_th_en						<= 1'b0;
+    //         end
+    //         else if(axim_control.arready & axim_control.arvalid)begin
+    //             rd_th_en						<= 1'b1;
+    //         end		
+    //         else begin
+    //             rd_th_en						<= rd_th_en;
+    //         end
+    //     end
     
         
-        always@(posedge pcie_clk)begin
-            if(~pcie_aresetn)begin
-                rd_th_sum						<= 32'b0;
-            end
-            else if(rd_th_en & ~rd_th_en_r)begin
-                rd_th_sum						<= 32'b0;
-            end 
-            else if(rd_th_en)begin
-                rd_th_sum						<= rd_th_sum + 1'b1;
-            end
-            else begin
-                rd_th_sum						<= rd_th_sum;
-            end
-        end
+    //     always@(posedge pcie_clk)begin
+    //         if(~pcie_aresetn)begin
+    //             rd_th_sum						<= 32'b0;
+    //         end
+    //         else if(rd_th_en & ~rd_th_en_r)begin
+    //             rd_th_sum						<= 32'b0;
+    //         end 
+    //         else if(rd_th_en)begin
+    //             rd_th_sum						<= rd_th_sum + 1'b1;
+    //         end
+    //         else begin
+    //             rd_th_sum						<= rd_th_sum;
+    //         end
+    //     end
 
 
 
 
 
-	always@(posedge pcie_clk)begin
-		if(~pcie_aresetn)begin
-			rd_lat_en						<= 1'b0;
-		end	
-		else if(axim_control.arready & axim_control.arvalid)begin
-			rd_lat_en						<= ~rd_lat_en;
-		end  
-		else begin
-			rd_lat_en						<= rd_lat_en;
-		end
-	end
+	// always@(posedge pcie_clk)begin
+	// 	if(~pcie_aresetn)begin
+	// 		rd_lat_en						<= 1'b0;
+	// 	end	
+	// 	else if(axim_control.arready & axim_control.arvalid)begin
+	// 		rd_lat_en						<= ~rd_lat_en;
+	// 	end  
+	// 	else begin
+	// 		rd_lat_en						<= rd_lat_en;
+	// 	end
+	// end
 
 	
-	always@(posedge pcie_clk)begin
-		if(~pcie_aresetn)begin
-			rd_lat_cnt						<= 32'b0;
-		end
-		else if(axim_control.arready & axim_control.arvalid)begin
-			rd_lat_cnt						<= 32'b0;
-		end 
-		else if(rd_lat_en)begin
-			rd_lat_cnt						<= rd_lat_cnt + 1'b1;
-		end
-		else begin
-			rd_lat_cnt						<= rd_lat_cnt;
-		end
-	end
+	// always@(posedge pcie_clk)begin
+	// 	if(~pcie_aresetn)begin
+	// 		rd_lat_cnt						<= 32'b0;
+	// 	end
+	// 	else if(axim_control.arready & axim_control.arvalid)begin
+	// 		rd_lat_cnt						<= 32'b0;
+	// 	end 
+	// 	else if(rd_lat_en)begin
+	// 		rd_lat_cnt						<= rd_lat_cnt + 1'b1;
+	// 	end
+	// 	else begin
+	// 		rd_lat_cnt						<= rd_lat_cnt;
+	// 	end
+	// end
 
-	always@(posedge pcie_clk)begin
-		if(~pcie_aresetn)begin
-			rd_lat_sum						<= 32'b0;
-		end
-		else if(axim_control.arready & axim_control.arvalid)begin
-			rd_lat_sum						<= rd_lat_cnt;
-		end 
-		else begin
-			rd_lat_sum						<= rd_lat_sum;
-		end
-	end
+	// always@(posedge pcie_clk)begin
+	// 	if(~pcie_aresetn)begin
+	// 		rd_lat_sum						<= 32'b0;
+	// 	end
+	// 	else if(axim_control.arready & axim_control.arvalid)begin
+	// 		rd_lat_sum						<= rd_lat_cnt;
+	// 	end 
+	// 	else begin
+	// 		rd_lat_sum						<= rd_lat_sum;
+	// 	end
+	// end
 
-//       ila_bypass bypass_ila (
-//           .clk(pcie_clk), // input wire clk
+    //   ila_bypass bypass_ila (
+    //       .clk(pcie_clk), // input wire clk
         
         
-//           .probe0(fifo_arlen_rd_en), // input wire [0:0]  probe0  
-//           .probe1(fifo_arlen_empty), // input wire [0:0]  probe1 
-//           .probe2(axim_control.awaddr[19:0]), // input wire [19:0]  probe2 
-//           .probe3(by_arcnt), // input wire [7:0]  probe3 
-//           .probe4(axim_control.rlast), // input wire [0:0]  probe4 
-//           .probe5(fifo_arlen_valid), // input wire [0:0]  probe5 
-//           .probe6(axim_control.wdata[31:0]), // input wire [511:0]  probe6 
-//           .probe7(axim_control.arvalid), // input wire [0:0]  probe7 
-//           .probe8(axim_control.arready), // input wire [0:0]  probe8 
-//           .probe9(axim_control.araddr[19:0]), // input wire [19:0]  probe9 
-//           .probe10(axim_control.arlen), // input wire [7:0]  probe10 
-//           .probe11(axim_control.rvalid), // input wire [0:0]  probe11 
-//           .probe12(axim_control.rready), // input wire [0:0]  probe12 
-//           .probe13(axim_control.rdata[31:0]), // input wire [511:0]  probe13 
-//           .probe14(wr_th_en), // input wire [0:0]  probe14 
-//           .probe15(data_cnt), // input wire [0:0]  probe15 
-//           .probe16(wr_th_sum), // input wire [19:0]  probe16 
-//           .probe17(rd_th_en), // input wire [31:0]  probe17 
-//           .probe18(rd_data), // input wire [31:0]  probe18
-//           .probe19(rd_th_sum) // input wire [31:0]  probe18
-//       );
+    //       .probe0(axim_control.awvalid), // input wire [0:0]  probe0  
+    //       .probe1(axim_control.awready), // input wire [0:0]  probe1 
+    //       .probe2(axim_control.awaddr[19:0]), // input wire [19:0]  probe2 
+    //       .probe3(axim_control.awlen), // input wire [7:0]  probe3 
+    //       .probe4(axim_control.rlast), // input wire [0:0]  probe4 
+    //       .probe5(fifo_arlen_valid), // input wire [0:0]  probe5 
+    //       .probe6(axim_control.wdata[31:0]), // input wire [511:0]  probe6 
+    //       .probe7(axim_control.arvalid), // input wire [0:0]  probe7 
+    //       .probe8(axim_control.arready), // input wire [0:0]  probe8 
+    //       .probe9(axim_control.araddr[19:0]), // input wire [19:0]  probe9 
+    //       .probe10(axim_control.arlen), // input wire [7:0]  probe10 
+    //       .probe11(axim_control.rvalid), // input wire [0:0]  probe11 
+    //       .probe12(axim_control.rready), // input wire [0:0]  probe12 
+    //       .probe13(axim_control.rdata[31:0]), // input wire [511:0]  probe13 
+    //       .probe14(axim_control.wvalid), // input wire [0:0]  probe14 
+    //       .probe15(axim_control.wready), // input wire [0:0]  probe15 
+    //       .probe16(axim_control.wlast) // input wire [19:0]  probe16 
+    //   );
 
 
 

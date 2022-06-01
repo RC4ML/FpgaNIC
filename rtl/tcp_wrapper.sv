@@ -75,40 +75,20 @@
   );
  
 
-//   tcp_control#(
-//     .TIME_OUT_CYCLE 			(32'd250000000)
-// )tcp_control_inst(
-//     .clk						(clk),
-//     .rst						(~rstn),
-
-//     .control_reg				(control_reg),
-//     .status_reg					(status_reg[7:0]),         
-
-//     //tcp send interface
-//     .m_axis_conn_send           (m_axis_conn_send),
-//     .m_axis_ack_to_send         (m_axis_ack_to_send),     //ack to tcp send
-//     .m_axis_ack_to_recv         (m_axis_ack_to_recv),     //ack to rcv to set buffer id
-//     .s_axis_conn_recv           (s_axis_conn_recv),
-//     //Application interface streams
-//     .m_axis_listen_port			(m_axis_listen_port),
-//     .s_axis_listen_port_status	(s_axis_listen_port_status),
-   
-//     .m_axis_open_connection		(m_axis_open_connection),
-//     .s_axis_open_status			(s_axis_open_status),
-//     .m_axis_close_connection	(m_axis_close_connection) 
-
-// );
-
-
-
-tcp_control_off_path inst_tcp_control_off_path
-(
+  tcp_control#(
+    .TIME_OUT_CYCLE 			(32'd250000000)
+)tcp_control_inst(
     .clk						(clk),
     .rst						(~rstn),
 
     .control_reg				(control_reg),
     .status_reg					(status_reg[7:0]),         
 
+    //tcp send interface
+    .m_axis_conn_send           (m_axis_conn_send),
+    .m_axis_ack_to_send         (m_axis_ack_to_send),     //ack to tcp send
+    .m_axis_ack_to_recv         (m_axis_ack_to_recv),     //ack to rcv to set buffer id
+    .s_axis_conn_recv           (s_axis_conn_recv),
     //Application interface streams
     .m_axis_listen_port			(m_axis_listen_port),
     .s_axis_listen_port_status	(s_axis_listen_port_status),
@@ -118,6 +98,26 @@ tcp_control_off_path inst_tcp_control_off_path
     .m_axis_close_connection	(m_axis_close_connection) 
 
 );
+
+
+
+// tcp_control_off_path inst_tcp_control_off_path
+// (
+//     .clk						(clk),
+//     .rst						(~rstn),
+
+//     .control_reg				(control_reg),
+//     .status_reg					(status_reg[7:0]),         
+
+//     //Application interface streams
+//     .m_axis_listen_port			(m_axis_listen_port),
+//     .s_axis_listen_port_status	(s_axis_listen_port_status),
+   
+//     .m_axis_open_connection		(m_axis_open_connection),
+//     .s_axis_open_status			(s_axis_open_status),
+//     .m_axis_close_connection	(m_axis_close_connection) 
+
+// );
 
 axis_register_slice_48 tx_metadata_slice (
   .aclk(clk),                    // input wire aclk
@@ -271,6 +271,22 @@ axis_data_fifo_512_d4096 inst_rx_data_fifo (
 
     assign status_reg[8]                = rx_meta_overflow_cnt;
     assign status_reg[9]                = rx_data_overflow_cnt;
+    
+    
+    
+ila_mem_single recv_inst (
+	.clk(clk), // input wire clk
+
+
+	.probe0(s_axis_notifications.valid), // input wire [0:0]  probe0  
+	.probe1(s_axis_notifications.ready), // input wire [0:0]  probe1 
+	.probe2(s_axis_notifications.data[31:0]), // input wire [31:0]  probe2 
+	.probe3(m_axis_read_package.valid), // input wire [0:0]  probe3 
+	.probe4(m_axis_read_package.ready), // input wire [0:0]  probe4 
+	.probe5(s_axis_notifications.data[79:64]) // input wire [31:0]  probe5
+);  
+    
+    
 
  endmodule
  

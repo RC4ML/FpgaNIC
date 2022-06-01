@@ -27,7 +27,9 @@ module tcp_recv_engine(
     // axis_meta.slave                     s_axis_notifications,
     // axis_meta.master                    m_axis_read_package,
     
-    axis_meta.slave                     s_axis_rx_metadata,
+    // axis_meta.slave                     s_axis_rx_metadata,
+	input wire							s_axis_rx_metadata_ready,
+	input wire							s_axis_rx_metadata_valid,
     axi_stream.slave                    s_axis_rx_data,
     
     input wire[15:0][31:0]              control_reg,
@@ -95,7 +97,7 @@ module tcp_recv_engine(
 	// assign m_axis_read_package.data = read_pkg_data;
 	
 	assign s_axis_rx_data.ready = 1'b1;
-	assign s_axis_rx_metadata.ready = 1'b1;
+	// assign s_axis_rx_metadata.ready = 1'b1;
 	
 	always @(posedge clk)begin
 		data_cnt_minus						<= (tcp_length>>>6)-1;
@@ -144,7 +146,7 @@ always @(posedge clk)begin
 	if(~rstn)begin
 		th_start 						    <= 1'b0;
     end
-	else if(s_axis_rx_metadata.valid & s_axis_rx_metadata.ready)begin
+	else if(s_axis_rx_metadata_ready & s_axis_rx_metadata_valid)begin
 		th_start						    <= 1'b1;
 	end  
 	else if(data_op_nums == ops)begin
@@ -199,23 +201,23 @@ assign status_reg[1] = error_cnt;
 assign status_reg[2] = error_index;
 assign status_reg[3] = tcp_word_counter;
 
-ila_tcp_recv_engine ila_tcp_recv_engine_inst (
-	.clk(clk), // input wire clk
+// ila_tcp_recv_engine ila_tcp_recv_engine_inst (
+// 	.clk(clk), // input wire clk
 
 
-	.probe0(0), // input wire [0:0]  probe0  
-	.probe1(0), // input wire [0:0]  probe1 
-	.probe2(0), // input wire [0:0]  probe2 
-	.probe3(0), // input wire [0:0]  probe3 
-	.probe4(0), // input wire [31:0]  probe4 
-	.probe5(s_axis_rx_data.ready), // input wire [0:0]  probe5 
-	.probe6(s_axis_rx_data.valid), // input wire [0:0]  probe6 
-	.probe7(s_axis_rx_data.last), // input wire [0:0]  probe7 
-	.probe8(s_axis_rx_data.data[31:0]), // input wire [31:0]  probe8 
-	.probe9(error_cnt), // input wire [31:0]  probe9 
-	.probe10(error_index), // input wire [31:0]  probe10
-	.probe11(data_cnt) // input wire [31:0]  probe10
-);
+// 	.probe0(0), // input wire [0:0]  probe0  
+// 	.probe1(0), // input wire [0:0]  probe1 
+// 	.probe2(0), // input wire [0:0]  probe2 
+// 	.probe3(0), // input wire [0:0]  probe3 
+// 	.probe4(0), // input wire [31:0]  probe4 
+// 	.probe5(s_axis_rx_data.ready), // input wire [0:0]  probe5 
+// 	.probe6(s_axis_rx_data.valid), // input wire [0:0]  probe6 
+// 	.probe7(s_axis_rx_data.last), // input wire [0:0]  probe7 
+// 	.probe8(s_axis_rx_data.data[31:0]), // input wire [31:0]  probe8 
+// 	.probe9(error_cnt), // input wire [31:0]  probe9 
+// 	.probe10(error_index), // input wire [31:0]  probe10
+// 	.probe11(data_cnt) // input wire [31:0]  probe10
+// );
 
 
 

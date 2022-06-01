@@ -43,7 +43,7 @@ add_executable(hyperloglog
     fpga/MemoryManager.cpp
     )
 
-add_executable(mpireduce
+add_executable(allreduce
     mpireduce.cpp
     fpga/XDMA.cpp
     fpga/XDMAController.cpp

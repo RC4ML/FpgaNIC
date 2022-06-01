@@ -1025,12 +1025,12 @@ module dma_write_data_from_tcp#(
 		.probe4(axis_dma_write_data.valid), // input wire [0:0]  probe4 
 		.probe5(axis_dma_write_data.ready), // input wire [0:0]  probe5 
 		.probe6(axis_dma_write_data.last), // input wire [0:0]  probe6 
-		.probe7(axis_dma_write_data.data[31:0]), // input wire [31:0]  probe7
+		.probe7(axis_dma_write_data.data[63:32]), // input wire [31:0]  probe7
 		.probe8(axis_dma_write_data.keep), // input wire [63:0]  probe7
 		.probe9(state), // input wire [4:0]  probe9 
 		.probe10(s_axis_set_buffer_id.valid), // input wire [0:0]  probe10 
 	   	.probe11(s_axis_set_buffer_id.ready), // input wire [0:0]  probe11 
-	   	.probe12(s_axis_set_buffer_id.data), // input wire [87:0]  probe12
+	   	.probe12(current_dma_length), // input wire [87:0]  probe12
 		.probe13(current_session_id), // input wire [31:0]  probe13 
 		.probe14(current_buffer_id), // input wire [31:0]  probe14 
 		.probe15(session_id[0]), // input wire [15:0]  probe15 

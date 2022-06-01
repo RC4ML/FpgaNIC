@@ -20,7 +20,6 @@
 #include <unistd.h>
 #include <string.h>
 #include<string>
-#include <boost/program_options.hpp>
 
 #include "fpga/XDMA.h"
 #include "fpga/XDMAController.h"

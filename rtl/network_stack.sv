@@ -70,6 +70,7 @@ module network_stack #(
 
     input wire [31:0] set_ip_addr_data,
     input wire [7:0]  set_board_number_data,
+    input wire [31:0] mtu,
 
     //Application interface streams
     axis_meta.slave     s_axis_listen_port,
@@ -374,7 +375,8 @@ tx_data_split inst_tx_data_split(
  
   .m_axis_tx_metadata(axis_tcp_tx_meta),
   .m_axis_tx_data(axis_tcp_tx_data),
-  .s_axis_tx_status(axis_tcp_tx_status)
+  .s_axis_tx_status(axis_tcp_tx_status),
+  .mtu(mtu)
 
   );
 

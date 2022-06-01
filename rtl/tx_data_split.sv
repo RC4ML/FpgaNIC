@@ -31,7 +31,9 @@ module tx_data_split(
     //output tx_data splited
     axis_meta.master    m_axis_tx_metadata,
     axi_stream.master   m_axis_tx_data,
-    axis_meta.slave     s_axis_tx_status
+    axis_meta.slave     s_axis_tx_status,
+
+    input wire [31:0]   mtu
 
 
     );
@@ -62,6 +64,16 @@ module tx_data_split(
 
 
     localparam [15:0]   MAX_LENGTH      = 32'd1408;
+
+    // reg [31:0]      MAX_LENGTH;
+    // always@(posedge clk)begin
+    //     if(mtu == 0)begin
+    //         MAX_LENGTH  <= 32'd1408;
+    //     end
+    //     else begin
+    //         MAX_LENGTH  <= mtu;
+    //     end
+    // end
     // wire [15:0]   MAX_LENGTH;
     // vio_0 vio_0 (
     // .clk(clk),                // input wire clk
@@ -157,7 +169,7 @@ module tx_data_split(
         if(~rstn)begin
             overflow_flag               <= 0;
         end
-        else if((meta_count == 16'hffff)&&((cstate == WAIT_DATA) || (cstate == LAST_DATA)))begin
+        else if((meta_count == 16'hffff)&&(((cstate == WAIT_DATA) && (~wait_data_r)) || ((cstate == LAST_DATA) && (~last_data_r))))begin
             overflow_flag               <= 1'b1;
         end
         else if((data_count == 16'hffff)&&m_axis_tx_data.last)begin
@@ -456,7 +468,11 @@ ila_split probe_ila_split(
 .probe19({m_axis_tlast,meta_count,data_count}), // input wire [64:0]
 .probe20(cstate), // input wire [7:0]  probe20 
 .probe21(tx_data_length), // input wire [15:0]  probe21
-.probe22(tx_data_length_data) // input wire [15:0]  probe21
+.probe22(tx_data_length_data), // input wire [15:0]  probe21
+.probe23(s_axis_tx_status.ready), // input wire [0:0]  probe23 
+.probe24(s_axis_tx_status.valid), // input wire [0:0]  probe24 
+.probe25(s_axis_tx_status.data) // input wire [63:0]  probe25
+
 );
 
 

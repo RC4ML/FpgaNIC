@@ -158,6 +158,9 @@ axis_data_fifo_512_cc axis_read_data_fifo_mem (
 wire s2mm_error;
 wire mm2s_error;
 
+//assign m_axis_mem_write_status.valid = 1;
+//assign m_axis_mem_write_status.data = 8'h80;
+
 axi_datamover_mem_unaligned datamover_mem (
     .m_axi_mm2s_aclk(mem_clk),// : IN STD_LOGIC;
     .m_axi_mm2s_aresetn(mem_aresetn), //: IN STD_LOGIC;
@@ -529,6 +532,18 @@ always@(posedge user_clk)begin
     status_reg[11]              <= read_length_counter;
 end
 
+
+// ila_mem_single your_instance_name (
+// 	.clk(user_clk), // input wire clk
+
+
+// 	.probe0(s_axis_mem_write_cmd.ready), // input wire [0:0]  probe0  
+// 	.probe1(s_axis_mem_write_cmd.valid), // input wire [0:0]  probe1 
+// 	.probe2(s_axis_mem_write_cmd.address[31:0]), // input wire [31:0]  probe2 
+// 	.probe3(m_axis_mem_write_status.valid), // input wire [0:0]  probe3 
+// 	.probe4(m_axis_mem_write_status.ready), // input wire [0:0]  probe4 
+// 	.probe5(m_axis_mem_write_status.data) // input wire [31:0]  probe5
+// );
 
 endmodule
 

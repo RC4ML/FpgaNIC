@@ -23,14 +23,14 @@
 module xdma_top_example( 
     output wire[15 : 0] pcie_tx_p,
     output wire[15 : 0] pcie_tx_n,
-    input wire[15 : 0]  pcie_rx_p,
+    input wire[15 : 0]  pcie_rx_p, 
     input wire[15 : 0]  pcie_rx_n,
 
     input wire				sys_clk_p,
     input wire				sys_clk_n,
 	input wire				sys_rst_n,
 	
-	///////////////ethernet 
+	// ///////////////ethernet 
     input  wire [0:0][3:0] gt_rxp_in,
     input  wire [0:0][3:0] gt_rxn_in,
     output wire [0:0][3:0] gt_txp_out,
@@ -403,60 +403,60 @@ tcp_wrapper #(
      );
 
 
-    // dma_read_data_to_tcp dma_read_data_inst( 
+    dma_read_data_to_tcp dma_read_data_inst( 
 		
-	// 	//user clock input
-	// 	.clk                        (pcie_clk),
-	// 	.rstn                       (user_rstn),
+		//user clock input
+		.clk                        (pcie_clk),
+		.rstn                       (user_rstn),
 
-	// 	//DMA Commands
-	// 	.axis_dma_read_cmd          (axis_dma_read_cmd[0]),
-	// 	//DMA Data streams      
-	// 	.axis_dma_read_data         (axis_dma_read_data[0]),
+		//DMA Commands
+		.axis_dma_read_cmd          (axis_dma_read_cmd[0]),
+		//DMA Data streams      
+		.axis_dma_read_data         (axis_dma_read_data[0]),
 		
-	// 	//tcp send
-	// 	.m_axis_tx_metadata         (app_axis_tcp_tx_meta),
-	// 	.m_axis_tx_data             (app_axis_tcp_tx_data),
-	// 	.s_axis_tx_status           (app_axis_tcp_tx_status),
+		//tcp send
+		.m_axis_tx_metadata         (app_axis_tcp_tx_meta),
+		.m_axis_tx_data             (app_axis_tcp_tx_data),
+		.s_axis_tx_status           (app_axis_tcp_tx_status),
 
-    //     //control reg
-    //     .s_axis_conn_send           (axis_conn_send),
-    //     .s_axis_conn_ack            (axis_ack_to_send),
+        //control reg
+        .s_axis_conn_send           (axis_conn_send),
+        .s_axis_conn_ack            (axis_ack_to_send),
 
-    //     .s_axis_send_read_cnt       (axis_tcp_recv_read_cnt),        
-    //     .s_axis_cmd                 (bypass_cmd),
-	// 	.control_reg                (fpga_control_reg[175:160]),
-	// 	.status_reg                 (fpga_status_reg[151:144])
+        .s_axis_send_read_cnt       (axis_tcp_recv_read_cnt),        
+        .s_axis_cmd                 (bypass_cmd),
+		.control_reg                (fpga_control_reg[175:160]),
+		.status_reg                 (fpga_status_reg[151:144])
 
-	// );
+	);
 
-    // dma_write_data_from_tcp dma_write_data_inst( 
+    dma_write_data_from_tcp dma_write_data_inst( 
     
-    //     //user clock input
-    //     .clk                        (pcie_clk),
-    //     .rstn                       (user_rstn),
+        //user clock input
+        .clk                        (pcie_clk),
+        .rstn                       (user_rstn),
     
-    //     //DMA Commands
-    //     .axis_dma_write_cmd         (axis_dma_write_cmd[0]),
+        //DMA Commands
+        .axis_dma_write_cmd         (axis_dma_write_cmd[0]),
     
-    //     //DMA Data streams      
-    //     .axis_dma_write_data        (axis_dma_write_data[0]),
+        //DMA Data streams      
+        .axis_dma_write_data        (axis_dma_write_data[0]),
     
-    //     //tcp send
-    //     // .s_axis_notifications       (axis_tcp_notification),
-    //     // .m_axis_read_package        (axis_tcp_read_pkg),
+        //tcp send
+        // .s_axis_notifications       (axis_tcp_notification),
+        // .m_axis_read_package        (axis_tcp_read_pkg),
         
-    //     .s_axis_rx_metadata         (app_axis_tcp_rx_meta),
-    //     .s_axis_rx_data             (app_axis_tcp_rx_data),
+        .s_axis_rx_metadata         (app_axis_tcp_rx_meta),
+        .s_axis_rx_data             (app_axis_tcp_rx_data),
 
-    //     //control cmd
-    //     .s_axis_set_buffer_id       (axis_ack_to_recv),
-    //     .m_axis_conn_ack_recv       (axis_conn_recv),
-    //     //control reg
-    //     .control_reg                (fpga_control_reg[191:176]),
-    //     .status_reg                 (fpga_status_reg[159:152])
+        //control cmd
+        .s_axis_set_buffer_id       (axis_ack_to_recv),
+        .m_axis_conn_ack_recv       (axis_conn_recv),
+        //control reg
+        .control_reg                (fpga_control_reg[191:176]),
+        .status_reg                 (fpga_status_reg[159:152])
     
-    // );
+    );
 
 
 /*
@@ -526,6 +526,7 @@ network_module_100g network_module_inst
  // //Control interface
  .set_ip_addr_data(fpga_control_reg[129]),//32'h0b01d401
  .set_board_number_data(fpga_control_reg[128]),
+ .mtu(fpga_control_reg[127]),
 
  //Role interface
  .s_axis_listen_port(axis_tcp_listen_port),
@@ -599,8 +600,51 @@ network_module_100g network_module_inst
 // );
 
 
+////////////////////////////simple KVS////////////////////////////
+
+//  read_dma_send_value read_dma_send_value( 
+    
+//     //user clock input
+//     .clk                        (pcie_clk),
+//     .rstn                       (user_rstn),
+
+//     //DMA Commands
+//     .axis_dma_read_cmd          (axis_dma_read_cmd[0]),
+//     //DMA Data streams      
+//     .axis_dma_read_data         (axis_dma_read_data[0]),
+    
+//     //tcp send
+//     .m_axis_tx_metadata         (app_axis_tcp_tx_meta),
+//     .m_axis_tx_data             (app_axis_tcp_tx_data),
+//     .s_axis_tx_status           (app_axis_tcp_tx_status),
 
 
+//     .control_reg                (fpga_control_reg[303:288]),
+//     .status_reg                 (fpga_status_reg[295:288])
+
+//     );
+
+//     receive_key_write_dma receive_key_write_dma_inst( 
+    
+//         //user clock input
+//         .clk                        (pcie_clk),
+//         .rstn                       (user_rstn),
+    
+//         //DMA Commands
+//         .axis_dma_write_cmd         (axis_dma_write_cmd[0]),
+    
+//         //DMA Data streams      
+//         .axis_dma_write_data        (axis_dma_write_data[0]),
+    
+//         //tcp send        
+//         .s_axis_rx_metadata         (app_axis_tcp_rx_meta),
+//         .s_axis_rx_data             (app_axis_tcp_rx_data),
+    
+//         //control reg
+//         .control_reg                (fpga_control_reg[319:304]),
+//         .status_reg                 (fpga_status_reg[303:296])
+    
+//         );
 
 
 
@@ -1132,36 +1176,39 @@ network_module_100g network_module_inst
 ///////////////////tcp benchmark//////////////////////
 
 
-    tcp_send_engine tcp_send_engine_inst( 
-        .clk                        (pcie_clk),
-        .rstn                       (user_rstn),
+    // tcp_send_engine tcp_send_engine_inst( 
+    //     .clk                        (pcie_clk),
+    //     .rstn                       (user_rstn),
         
-        //tcp interface
-        .m_axis_tx_metadata         (app_axis_tcp_tx_meta),
-        .m_axis_tx_data             (app_axis_tcp_tx_data),
-        .s_axis_tx_status           (app_axis_tcp_tx_status),
-    
+    //     //tcp interface
+    //     .m_axis_tx_metadata         (app_axis_tcp_tx_meta),
+    //     .m_axis_tx_data             (app_axis_tcp_tx_data),
+    //     .s_axis_tx_status           (app_axis_tcp_tx_status),
+
+    //     .s_axis_rx_metadata         (app_axis_tcp_rx_meta),
         
-        .control_reg                (fpga_control_reg[63:48]),
-        .status_reg                 (fpga_status_reg[103:96])
+    //     .control_reg                (fpga_control_reg[63:48]),
+    //     .status_reg                 (fpga_status_reg[103:96])
     
-    );
+    // );
 
 
-    tcp_recv_engine tcp_recv_engine_inst( 
-        .clk                        (pcie_clk),
-        .rstn                       (user_rstn),
+    // tcp_recv_engine tcp_recv_engine_inst( 
+    //     .clk                        (pcie_clk),
+    //     .rstn                       (user_rstn),
         
-        //tcp interface
-        // .s_axis_notifications       (axis_tcp_notification),
-        // .m_axis_read_package        (axis_tcp_read_pkg),
-        .s_axis_rx_metadata         (app_axis_tcp_rx_meta),
-        .s_axis_rx_data             (app_axis_tcp_rx_data),
+    //     //tcp interface
+    //     // .s_axis_notifications       (axis_tcp_notification),
+    //     // .m_axis_read_package        (axis_tcp_read_pkg),
+    //     // .s_axis_rx_metadata         (app_axis_tcp_rx_meta),
+    //     .s_axis_rx_metadata_ready   (app_axis_tcp_rx_meta.ready),
+    //     .s_axis_rx_metadata_valid   (app_axis_tcp_rx_meta.valid),
+    //     .s_axis_rx_data             (app_axis_tcp_rx_data),
         
-        .control_reg                (fpga_control_reg[63:48]),
-        .status_reg                 (fpga_status_reg[111:104])
+    //     .control_reg                (fpga_control_reg[63:48]),
+    //     .status_reg                 (fpga_status_reg[111:104])
     
-    );
+    // );
 
 
     // tcp_latency_engine inst_tcp_latency_engine( 
@@ -1198,5 +1245,28 @@ network_module_100g network_module_inst
 //     .fpga_status                        (fpga_status_reg[207:192])   
 
 // );
+
+//////////////////////////barrier
+
+        // barrier inst_barrier( 
+
+        //     //user clock input
+        //     .clk(pcie_clk),
+        //     .rstn(user_rstn),
+            
+        //     //tcp send
+        //     .m_axis_tx_metadata(app_axis_tcp_tx_meta),
+        //     .m_axis_tx_data(app_axis_tcp_tx_data),
+        //     .s_axis_tx_status(app_axis_tcp_tx_status),
+        //     //tcp recv   
+        //     .s_axis_rx_metadata(app_axis_tcp_rx_meta),
+        //     .s_axis_rx_data(app_axis_tcp_rx_data),
+        
+        //     //control reg
+        //     .control_reg(fpga_control_reg[335:320]),
+        //     .status_reg(fpga_status_reg[327:320])
+        
+            
+        //     );        
 
 endmodule

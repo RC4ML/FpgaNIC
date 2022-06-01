@@ -37,7 +37,7 @@ void calculate_page_offset(	hls::stream<memCmd>&			cmdIn,
 	{
 		memCmd cmd = cmdIn.read();
 		ap_uint<48> addr = cmd.addr - regBaseVaddr;
-		ap_uint<24> page_offset = (addr & 0x1FFFFF);
+		ap_uint<24> page_offset = (addr & PAGE_OFFSET);
 		ap_uint<24> newLength = PAGE_SIZE-page_offset;
 		cmdOut.write(internalCmd(cmd.addr, cmd.len, page_offset, newLength));
 	}
