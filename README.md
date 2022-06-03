@@ -167,4 +167,10 @@ According to driver/README.md, build the driver and insmod the driver
 $  cd sw/
 ```
 
-According to sw/README.md, build the software project and run the application
+According to sw/README.md, build the software project and run the application. 
+
+Note: Some of the experimental programs are in the ./sw_dev folder! But the experimental instructions are all in sw/README.md.
+```
+$ cd sw_dev/
+```
+
