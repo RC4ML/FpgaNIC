@@ -96,42 +96,53 @@ $ vivado
 ### 3. Open hardware manage
 
 As shown, click it.
+
 ![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/openhw.jpg)
 
 ### 4. Open target
 
 Click "Open target" and "Open New Target..""
+
 ![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/opentar.jpg)
 
 Click "Next"
+
 ![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/opentar1.jpg)
 
 Choose "Remote server", the "Host name" is 192.168.189.23, "Port" is 3121, click "Next"
+
 ![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/opentar2.jpg)
 
 Click "next", then "Finish"
+
 ![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/opentar3.jpg)
 
 ### 5. Download the bitstream
 
 Right click "xilinx_tcf/Xilinx/221770205K038A" (server act_m4) and click "Open Target"
+
 ![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/downbit1.jpg)
 
 Right click "xcu280_u55_0" and click "Program Device.."
+
 ![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/downbit2.jpg)
 
 Click "..." to choose the bitstream
+
 ![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/downbit3.jpg)
 
 Choose the bitstream for the experiments, such as pcie_benchmark.bit for Figure 3. the dictionary of bitstream is /home/atc_bitstream/bitstream
+
 ![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/opentar5.jpg)
 
 Click "Program" to download the bitstrem to the FPGA
+
 ![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/opentar6.jpg)
 
 ### 6.Download the bitstream to the other machine
 
 Open another terminal and repeat steps 1-5. In step 5, right click "xilinx_tcf/Xilinx/221770202700VA" (server act_m7). Then, download the same bitstream as server act_m4.
+
 ![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/tcp_benchmark.jpg)
 
 ### 7.Reboot server atc_m4 and atc_m7.
