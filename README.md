@@ -41,34 +41,34 @@ $ cmake ..
 
 ```
 
-#### 3. make HLS IP Core
+#### 3. Make HLS IP Core
 ```
 $ make installip
 ```
 
 #### 4. Create vivado project (You can choose one project to create)
 
-##### a. create direct project(Figure 6)
+##### a. Create direct project(Figure 6)
 ```
 $ make direct
 ```
-##### b. create pcie_benchmark project(Figure 3 4)
+##### b. Create pcie_benchmark project(Figure 3 4)
 ```
 $ make pcie_benchmark
 ```
-##### c. create tcp_latency project(Figure 5a)
+##### c. Create tcp_latency project(Figure 5a)
 ```
 $ make tcp_latency
 ```
-##### d. create tcp_benchmark project(Figure 5b)
+##### d. Create tcp_benchmark project(Figure 5b)
 ```
 $ make tcp_benchmark
 ```
-##### e. create allreduce project(Figure 7 8)
+##### e. Create allreduce project(Figure 7 8)
 ```
 $ make allreduce
 ```
-##### f. create hyperloglog project(Figure 9)
+##### f. Create hyperloglog project(Figure 9)
 ```
 $ make hyperloglog
 ```
@@ -78,6 +78,71 @@ $ make hyperloglog
 #### 5. Generate bitstream
 
 -open the project by Vivado2020.1 and generate bitstream
+
+## Download the bitstream to FPGAs
+
+### 1.Connect the download server
+```
+$ ssh -p 6000 atc_bitstream@101.37.28.229
+```
+
+### 2.Open the vivado
+
+We need to open the GUI of Vivado to download the bitstream, so we need a terminal that supports X11 forwarding, such as MobaXterm.
+
+```
+$ vivado
+```
+### 3. Open hardware manage
+
+As shown, click it.
+![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/openhw.jpg)
+
+### 4. Open target
+
+Click "Open target" and "Open New Target..""
+![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/opentar.jpg)
+
+Click "Next"
+![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/opentar1.jpg)
+
+Choose "Remote server", the "Host name" is 192.168.189.23, "Port" is 3121, click "Next"
+![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/opentar2.jpg)
+
+Click "next", then "Finish"
+![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/opentar3.jpg)
+
+### 5. Download the bitstream
+
+Right click "xilinx_tcf/Xilinx/221770205K038A" (server act_m4) and click "Open Target"
+![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/downbit1.jpg)
+
+Right click "xcu280_u55_0" and click "Program Device.."
+![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/downbit2.jpg)
+
+Click "..." to choose the bitstream
+![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/downbit3.jpg)
+
+Choose the bitstream for the experiments, such as pcie_benchmark.bit for Figure 3. the dictionary of bitstream is /home/atc_bitstream/bitstream
+![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/opentar5.jpg)
+
+Click "Program" to download the bitstrem to the FPGA
+![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/opentar6.jpg)
+
+### 6.Download the bitstream to the other machine
+
+Open another terminal and repeat steps 1-5. In step 5, right click "xilinx_tcf/Xilinx/221770202700VA" (server act_m7). Then, download the same bitstream as server act_m4.
+![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/tcp_benchmark.jpg)
+
+### 7.Reboot server atc_m4 and atc_m7.
+
+After the bitstreams are completely downloaded to the servers, open a terminal in atc_m4 and atc_m7 respectively, and reboot the server
+```
+$ sudo reboot
+```
+
+The driver will be loaded automatically, and the application can be executed in the ./sw or ./sw_dev dictionary.
+
 
 ## Build XDMA Driver
 ```
