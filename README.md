@@ -137,13 +137,13 @@ Choose the bitstream for the experiments, such as pcie_benchmark.bit for Figure 
 
 Click "Program" to download the bitstrem to the FPGA
 
-![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/opentar6.jpg)
+![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/downbit4.jpg)
 
 ### 6.Download the bitstream to the other machine
 
 Open another terminal and repeat steps 1-5. In step 5, right click "xilinx_tcf/Xilinx/221770202700VA" (server act_m7). Then, download the same bitstream as server act_m4.
 
-![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/tcp_benchmark.jpg)
+![image](https://github.com/RC4ML/FpgaNIC/blob/gpu_hll/img/opentar6.jpg)
 
 ### 7.Reboot server atc_m4 and atc_m7.
 
