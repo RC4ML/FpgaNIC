@@ -4,19 +4,6 @@ FpgaNIC allows to offload various complex compute tasks to a customized data-pat
 
 
 
-## Cite this work
-If you use it in your paper, please cite our work ([full version](https://www.usenix.org/conference/atc22/presentation/wang-zeke)).
-```
-@inproceedings{wang_atc22,
-  title={FpgaNIC: An FPGA-based Versatile 100Gb SmartNIC for GPUs},
-  author={Zeke Wang and Hongjing Huang and Jie Zhang and Fei Wu and Gustavo Alonso},
-  year={2020},
-  booktitle={2022 USENIX Annual Technical Conference (ATC)},
-}
-```
-
-
-
 ## Build example project
 
 ## Rrerequisites
@@ -189,5 +176,18 @@ According to sw/README.md, build the software project and run the application.
 Note: Some of the experimental programs are in the ./sw_dev folder! But the experimental instructions are all in sw/README.md.
 ```
 $ cd sw_dev/
+```
+
+
+
+## Cite this work
+If you use it in your paper, please cite our work ([full version](https://www.usenix.org/conference/atc22/presentation/wang-zeke)).
+```
+@inproceedings{wang_atc22,
+  title={FpgaNIC: An FPGA-based Versatile 100Gb SmartNIC for GPUs},
+  author={Zeke Wang and Hongjing Huang and Jie Zhang and Fei Wu and Gustavo Alonso},
+  year={2020},
+  booktitle={2022 USENIX Annual Technical Conference (ATC)},
+}
 ```
 
