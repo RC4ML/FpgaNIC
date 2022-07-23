@@ -9,11 +9,16 @@ FpgaNIC is an FPGA-based, GPU-centric, versatile SmartNIC
 
 4, that allows to offload various complex compute tasks to a customized data-path accelerator for line-rate in-network computing on the FPGA, thereby complementing the processing at the GPU. 
 
-Besides, 
+![image](https://user-images.githubusercontent.com/4263242/180594854-becb5c85-44d5-4a5e-9313-8fa433204292.png)
+
+
+Besides, FpgaNIC enables efficient efficient FPGA-GPU co-processing.
+
+
 
 
 ## Check-list
-1. At least two nodes, each has a GPU that supports NVIDIA GPUDirect and the Xilinx U280 or U50 card.
+1. At least two nodes, each has a GPU that supports NVIDIA GPUDirect and a Xilinx U280 or U50 card.
 
 2. Each FPGA card is connected to a 100Gbps Ethernet switch.
 
