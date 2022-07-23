@@ -14,6 +14,7 @@ FpgaNIC is an FPGA-based, GPU-centric, versatile SmartNIC
 
 Besides, FpgaNIC enables efficient efficient FPGA-GPU co-processing.
 
+![image](https://user-images.githubusercontent.com/4263242/180595084-6dd376f0-84cc-4aee-8db8-a623b454b855.png)
 
 
 
