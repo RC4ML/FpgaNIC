@@ -12,7 +12,7 @@ If you use it in your paper, please cite our work ([full version](https://www.us
 @inproceedings{wang_atc22,
   title={FpgaNIC: An FPGA-based Versatile 100Gb SmartNIC for GPUs},
   author={Zeke Wang and Hongjing Huang and Jie Zhang and Fei Wu and Gustavo Alonso},
-  year={2020},
+  year={2022},
   booktitle={2022 USENIX Annual Technical Conference (ATC)},
 }
 ```
