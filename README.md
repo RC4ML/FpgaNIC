@@ -39,19 +39,19 @@ There are three steps to run each experiment. Before running FpgaNIC, please clo
 $ git clone https://github.com/RC4ML/FpgaNIC
 
 ### Hardware: FPGA Bitstream
-1. $ mkdir build && cd build 
+1. $ cd bitstream
 
-2.  $ cmake ..
+<!-- 2.  $ cmake ..
 
 3. Make HLS IP core
     $ make installip
     
 4. Create vivado project, add the hardware project option after make.
-     $ make pcie_benchmark
+     $ make pcie_benchmark -->
      
-5. Now the hardware project is produced, generate bitstream using vivado and flush it to every FPGA card.
+2. Using vivado and flush the bitstream to every FPGA card.
 
-6. Every time you download the bitstream to the FPGA, you have to reboot the machine, do not forget to reinstall
+3. Every time you download the bitstream to the FPGA, you have to reboot the machine, do not forget to reinstall
 xdma driver and GDR driver.
 
 
