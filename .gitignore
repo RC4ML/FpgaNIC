@@ -5,6 +5,7 @@ hls/
 rtl/
 sim/
 constraints/
+scripts/
 
 
 *.so
