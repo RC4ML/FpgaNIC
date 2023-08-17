@@ -1,1 +1,0 @@
-mpiReduceSession1

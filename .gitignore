@@ -1,6 +1,10 @@
 build/
 iprepo/
 */build/
+hls/
+rtl/
+sim/
+
 
 *.so
 *.o
