@@ -4,6 +4,7 @@ iprepo/
 hls/
 rtl/
 sim/
+constraints/
 
 
 *.so
